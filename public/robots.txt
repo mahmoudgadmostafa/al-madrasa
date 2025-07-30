@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://madrasa-tach.netlify.app/sitemap.xml

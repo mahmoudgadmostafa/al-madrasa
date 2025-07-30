@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>مدرسة أون لاين</title>
+    <meta name="description" content="مدرسة أون لاين - منصة تعليم إلكتروني ذكية تقدم شروحات وكتب وملخصات واختبارات لجميع المراحل الدراسية.">
+    <meta name="keywords" content="مدرسة أون لاين, التعليم عن بعد, منصة تعليمية, تعليم إلكتروني, شروحات فيديو, كتب مدرسية, اختبارات تفاعلية">
+    <meta name="author" content="أ/ محمود جاد مصطفى">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png" />
+
+    <!-- Google Search Verification -->
+    <meta name="google-site-verification" content="jcb_cWNsjZAZ8xltx6rsM0s2Oe-vAABZLAHDetDWZ8s" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="مدرسة أون لاين">
+    <meta property="og:description" content="منصة تعليمية متكاملة للطلاب والمعلمين، تقدم محتوى تعليمي شامل ومحدث باستمرار.">
+    <meta property="og:image" content="https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png">
+    <meta property="og:url" content="https://madrasa-tach.netlify.app">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter -->
+    <meta name="twitter:title" content="مدرسة أون لاين">
+    <meta name="twitter:description" content="تعلم من أي مكان وفي أي وقت مع مدرسة أون لاين - محتوى تعليمي شامل لجميع المراحل.">
+    <meta name="twitter:image" content="https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <script type="module" crossorigin src="/assets/index-3a104f6f.js"></script>
+    <link rel="stylesheet" href="/assets/index-5731f9ff.css">
+    <script type="module">
+window.onerror = (message, source, lineno, colno, errorObj) => {
+	const errorDetails = errorObj ? JSON.stringify({
+		name: errorObj.name,
+		message: errorObj.message,
+		stack: errorObj.stack,
+		source,
+		lineno,
+		colno,
+	}) : null;
+
+	window.parent.postMessage({
+		type: 'horizons-runtime-error',
+		message,
+		error: errorDetails
+	}, '*');
+};
+</script>
+    <script type="module">
+const observer = new MutationObserver((mutations) => {
+	for (const mutation of mutations) {
+		for (const addedNode of mutation.addedNodes) {
+			if (
+				addedNode.nodeType === Node.ELEMENT_NODE &&
+				(
+					addedNode.tagName?.toLowerCase() === 'vite-error-overlay' ||
+					addedNode.classList?.contains('backdrop')
+				)
+			) {
+				handleViteOverlay(addedNode);
+			}
+		}
+	}
+});
+
+observer.observe(document.documentElement, {
+	childList: true,
+	subtree: true
+});
+
+function handleViteOverlay(node) {
+	if (!node.shadowRoot) {
+		return;
+	}
+
+	const backdrop = node.shadowRoot.querySelector('.backdrop');
+
+	if (backdrop) {
+		const overlayHtml = backdrop.outerHTML;
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(overlayHtml, 'text/html');
+		const messageBodyElement = doc.querySelector('.message-body');
+		const fileElement = doc.querySelector('.file');
+		const messageText = messageBodyElement ? messageBodyElement.textContent.trim() : '';
+		const fileText = fileElement ? fileElement.textContent.trim() : '';
+		const error = messageText + (fileText ? ' File:' + fileText : '');
+
+		window.parent.postMessage({
+			type: 'horizons-vite-error',
+			error,
+		}, '*');
+	}
+}
+</script>
+    <script type="module">
+const originalConsoleError = console.error;
+console.error = function(...args) {
+	originalConsoleError.apply(console, args);
+
+	let errorString = '';
+
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i];
+		if (arg instanceof Error) {
+			errorString = arg.stack || `${arg.name}: ${arg.message}`;
+			break;
+		}
+	}
+
+	if (!errorString) {
+		errorString = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+	}
+
+	window.parent.postMessage({
+		type: 'horizons-console-error',
+		error: errorString
+	}, '*');
+};
+</script>
+    <script type="module">
+const originalFetch = window.fetch;
+
+window.fetch = function(...args) {
+	const url = args[0] instanceof Request ? args[0].url : args[0];
+
+	// Skip WebSocket URLs
+	if (url.startsWith('ws:') || url.startsWith('wss:')) {
+		return originalFetch.apply(this, args);
+	}
+
+	return originalFetch.apply(this, args)
+		.then(async response => {
+			const contentType = response.headers.get('Content-Type') || '';
+
+			// Exclude HTML document responses
+			const isDocumentResponse =
+				contentType.includes('text/html') ||
+				contentType.includes('application/xhtml+xml');
+
+			if (!response.ok && !isDocumentResponse) {
+					const responseClone = response.clone();
+					const errorFromRes = await responseClone.text();
+					const requestUrl = response.url;
+					console.error(`Fetch error from ${requestUrl}: ${errorFromRes}`);
+			}
+
+			return response;
+		})
+		.catch(error => {
+			if (!url.match(/.html?$/i)) {
+				console.error(error);
+			}
+
+			throw error;
+		});
+};
+</script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    
+  </body>
+</html>

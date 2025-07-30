@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 96%; /* Light Grayish Blue */
+    --foreground: 220 15% 20%; /* Dark Blue */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 220 15% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
+    --primary: 210 90% 50%; /* Bright Blue */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 210 20% 85%; /* Light Blue-Gray */
+    --secondary-foreground: 220 15% 20%;
+    --muted: 210 20% 90%; /* Very Light Blue-Gray */
+    --muted-foreground: 220 10% 45%; /* Medium Gray-Blue */
+    --accent: 200 80% 60%; /* Sky Blue */
+    --accent-foreground: 220 15% 20%;
+    --destructive: 0 70% 50%; /* Red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 80%; /* Gray-Blue Border */
+    --input: 210 20% 80%;
+    --ring: 210 90% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 15% 10%; /* Very Dark Blue */
+    --foreground: 210 20% 95%; /* Light Gray */
+    --card: 220 15% 15%; /* Darker Blue */
+    --card-foreground: 210 20% 95%;
+    --popover: 220 15% 15%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 210 90% 50%; /* Bright Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 25%; /* Medium Dark Blue */
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 15% 25%;
+    --muted-foreground: 210 15% 60%; /* Lighter Gray */
+    --accent: 200 80% 60%; /* Sky Blue */
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 60% 45%; /* Darker Red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 30%; /* Dark Gray-Blue Border */
+    --input: 220 15% 30%;
+    --ring: 210 90% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
