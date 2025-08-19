@@ -135,7 +135,7 @@ const LoginPage = () => {
 
       <div className="mt-10">
         <p className="text-center text-sm font-semibold text-muted-foreground mb-2">
-          📢  للتواصل مع إدارة الموقع للحصول علي الكود وكلمة السري
+          📢  للتواصل مع إدارة الموقع للحصول علي الكود وكلمة المرور
         </p>
         <div className="w-full max-w-md">
           <div className={`text-white text-sm py-2 px-4 rounded-md text-center ${contactOptions[index].color}`}>
