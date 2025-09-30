@@ -83,7 +83,7 @@ const StudentDashboardPage = () => {
             <p className="text-sm text-muted-foreground mb-4">المعلم: {subject.teacherName || 'غير محدد'}</p>
 
             {/* اسال المساعد الذكي */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><Book size={18} /><span className="mr-2">الكتب</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><Book size={18} /><span className="mr-2">اسال مساعدك الذكي</span></h4>
             {subject.content?.textbooks?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedBookId}>
@@ -104,7 +104,7 @@ const StudentDashboardPage = () => {
             ) : <p className="text-sm text-muted-foreground">لا يوجد مساعد ذكي.</p>}
 
             {/* كتب وملخصات */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><FileText size={18} /><span className="mr-2">الملخصات</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><FileText size={18} /><span className="mr-2">الملخصات والكتب</span></h4>
             {subject.content?.summaries?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedSummaryId}>
