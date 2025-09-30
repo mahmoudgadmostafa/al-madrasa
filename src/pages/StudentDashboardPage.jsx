@@ -82,12 +82,12 @@ const StudentDashboardPage = () => {
           <AccordionContent>
             <p className="text-sm text-muted-foreground mb-4">المعلم: {subject.teacherName || 'غير محدد'}</p>
 
-            {/* الكتب */}
+            {/* اسال المساعد الذكي */}
             <h4 className="flex items-center text-md font-semibold my-2 text-primary"><Book size={18} /><span className="mr-2">الكتب</span></h4>
             {subject.content?.textbooks?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedBookId}>
-                  <SelectTrigger><SelectValue placeholder="اختر كتاباً" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="اختر مساعدك" /></SelectTrigger>
                   <SelectContent>
                     {subject.content.textbooks.map(item => (
                       <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
@@ -97,18 +97,18 @@ const StudentDashboardPage = () => {
                 {(() => {
                   const book = subject.content.textbooks.find(i => i.id === selectedBookId);
                   return book ? (
-                    <a href={book.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline">فتح الكتاب</a>
+                    <a href={book.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline"> اضغط للتحدث مع مساعدك الذكي</a>
                   ) : null;
                 })()}
               </>
-            ) : <p className="text-sm text-muted-foreground">لا توجد كتب.</p>}
+            ) : <p className="text-sm text-muted-foreground">لا يوجد مساعد ذكي.</p>}
 
-            {/* الملخصات */}
+            {/* كتب وملخصات */}
             <h4 className="flex items-center text-md font-semibold my-2 text-primary"><FileText size={18} /><span className="mr-2">الملخصات</span></h4>
             {subject.content?.summaries?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedSummaryId}>
-                  <SelectTrigger><SelectValue placeholder="اختر ملخصاً" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="اختر ملخصا او كتاب " /></SelectTrigger>
                   <SelectContent>
                     {subject.content.summaries.map(item => (
                       <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
@@ -118,11 +118,11 @@ const StudentDashboardPage = () => {
                 {(() => {
                   const summary = subject.content.summaries.find(i => i.id === selectedSummaryId);
                   return summary ? (
-                    <a href={summary.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline">فتح الملخص</a>
+                    <a href={summary.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline">فتح ملخص او كتاب</a>
                   ) : null;
                 })()}
               </>
-            ) : <p className="text-sm text-muted-foreground">لا توجد ملخصات.</p>}
+            ) : <p className="text-sm text-muted-foreground">لا توجد كتب او ملخصات</p>}
 
             {/* الاختبارات */}
             <h4 className="flex items-center text-md font-semibold my-2 text-primary"><ClipboardCheck size={18} /><span className="mr-2">الاختبارات</span></h4>
