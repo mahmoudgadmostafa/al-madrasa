@@ -25,7 +25,7 @@ const Navbar = () => {
   // 🔹 استخدم شعار المدرسة من الإعدادات إن وجد، أو شعار افتراضي
   const logoUrl =
     schoolSettings?.logoUrl ||
-    'https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png';
+   "/og.png";
 
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
