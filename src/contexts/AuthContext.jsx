@@ -31,24 +31,34 @@ export const AuthProvider = ({ children }) => {
   }, [db]);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoadingAuth(true);
-      if (firebaseUser) {
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            if (userData.role) {
-              setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...userData });
-              setIsAuthenticated(true);
-            } else {
-              signOut(auth);
-            }
-          } else {
-            signOut(auth);
-          }
-          setLoadingAuth(false);
-        });
+   const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+  if (!firebaseUser) {
+    // المستخدم خرج من النظام
+    setUser(null);
+    setIsAuthenticated(false);
+    setLoadingAuth(false);
+    return;
+  }
+
+  setLoadingAuth(true);
+  const userDocRef = doc(db, "users", firebaseUser.uid);
+  const unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
+    if (userDocSnap.exists()) {
+      const userData = userDocSnap.data();
+      if (userData.role) {
+        setUser({ uid: firebaseUser.uid, email: firebaseUser.email, ...userData });
+        setIsAuthenticated(true);
+      } else {
+        signOut(auth);
+      }
+    } else {
+      signOut(auth);
+    }
+    setLoadingAuth(false);
+  });
+  return () => unsubscribeUser();
+});
+
         return () => unsubscribeUser();
       } else {
         setUser(null);
@@ -83,13 +93,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+ const logout = async () => {
+  try {
+    setLoadingAuth(true); // ✅ لعرض اللودر أثناء الخروج
     await signOut(auth);
+    
+    // ✅ تنظيف الحالة يدويًا
     setUser(null);
     setIsAuthenticated(false);
-    navigate('/login');
-    toast({ title: "تم تسجيل الخروج", description: "نأمل رؤيتك قريباً!" });
-  };
+
+    // ✅ نضيف تأخير بسيط للسماح لـ onAuthStateChanged بالاستقرار
+    setTimeout(() => {
+      navigate('/login');
+    }, 100);
+
+    toast({
+      title: "تم تسجيل الخروج",
+      description: "نأمل رؤيتك قريباً!",
+    });
+  } catch (error) {
+    toast({
+      title: "خطأ في تسجيل الخروج",
+      description: "حدثت مشكلة أثناء تسجيل الخروج. حاول مرة أخرى.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoadingAuth(false);
+  }
+};
+
   
   const updateSchoolSettings = (newSettings) => {
     setSchoolSettings(prevSettings => ({ ...prevSettings, ...newSettings }));
