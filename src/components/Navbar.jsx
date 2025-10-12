@@ -51,13 +51,14 @@ const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to={getDashboardLink()} className="flex items-center space-x-2 rtl:space-x-reverse text-primary hover:text-primary/80 transition-colors">
-            <motion.img 
-              src={logoUrl} 
-              alt="School Logo" 
-              className="h-10 w-10"
-              animate={{ rotate: [0, 10, -10, 10, 0] }}
-              transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
-            />
+           <motion.img 
+  src={logoUrl} 
+  alt="شعار المدرسة" 
+  className="h-10 w-10 object-contain"
+  animate={{ rotate: [0, 10, -10, 10, 0] }}
+  transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
+/>
+
             <span className="text-xl font-bold">{currentSchoolName}</span>
           </Link>
           
