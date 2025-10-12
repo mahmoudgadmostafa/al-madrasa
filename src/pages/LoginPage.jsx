@@ -23,7 +23,7 @@ const contactOptions = [
   },
   {
     label: 'صفحتنا على فيسبوك',
-    link: 'https://web.facebook.com/maharet.edu',
+    link: 'https://web.facebook.com/madrasati.26',
     color: 'bg-primary',
     icon: <Facebook className="w-4 h-4 mr-2 text-white" />,
   },
