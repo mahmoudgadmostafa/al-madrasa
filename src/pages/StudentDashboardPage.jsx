@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Book, Film, Video, ExternalLink, FileText, ClipboardCheck } from 'lucide-react';
+import { Book, Film, Video, ExternalLink, FileText, ClipboardCheck, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getFirestore, doc, onSnapshot, collection, query, where } from "firebase/firestore";
 import { toast } from "@/components/ui/use-toast";
@@ -14,6 +14,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const StudentDashboardPage = () => {
   const { user, schoolSettings } = useAuth();
@@ -24,6 +31,8 @@ const StudentDashboardPage = () => {
   const [selectedBookId, setSelectedBookId] = useState(null);
   const [selectedSummaryId, setSelectedSummaryId] = useState(null);
   const [selectedExamId, setSelectedExamId] = useState(null);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [currentVideo, setCurrentVideo] = useState(null);
   const db = getFirestore();
 
   const studentStage = schoolSettings.educationalStages.find(s => s.id === user?.stageId);
@@ -74,6 +83,26 @@ const StudentDashboardPage = () => {
     }
   };
 
+  const handleVideoSelect = (videoId, videoList) => {
+    const video = videoList.find(i => i.id === videoId);
+    if (video) {
+      setSelectedVideoId(videoId);
+      const embedUrl = getYouTubeEmbedUrl(video.title);
+      if (embedUrl) {
+        setCurrentVideo({
+          url: embedUrl,
+          title: video.url // استخدام الاسم بدلاً من الرابط
+        });
+      }
+    }
+  };
+
+  const openVideoDialog = () => {
+    if (currentVideo) {
+      setVideoDialogOpen(true);
+    }
+  };
+
   const renderSubjectsAccordion = (subjectList) => (
     <Accordion type="single" collapsible className="w-full">
       {subjectList.map(subject => (
@@ -83,92 +112,146 @@ const StudentDashboardPage = () => {
             <p className="text-sm text-muted-foreground mb-4">المعلم: {subject.teacherName || 'غير محدد'}</p>
 
             {/* اسال المساعد الذكي */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><Book size={18} /><span className="mr-2">اسال مساعدك الذكي</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary">
+              <Book size={18} />
+              <span className="mr-2">اسال مساعدك الذكي</span>
+            </h4>
             {subject.content?.textbooks?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedBookId}>
-                  <SelectTrigger><SelectValue placeholder="اختر مساعدك" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مساعدك" />
+                  </SelectTrigger>
                   <SelectContent>
                     {subject.content.textbooks.map(item => (
-                      <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.url} {/* عرض اسم المساعد بدلاً من الرابط */}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {(() => {
                   const book = subject.content.textbooks.find(i => i.id === selectedBookId);
                   return book ? (
-                    <a href={book.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline"> اضغط للتحدث مع مساعدك الذكي</a>
+                    <a 
+                      href={book.title} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
+                    >
+                      اضغط للتحدث مع مساعدك الذكي
+                      <ExternalLink size={14} className="mr-2" />
+                    </a>
                   ) : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا يوجد مساعد ذكي.</p>}
 
             {/* كتب وملخصات */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><FileText size={18} /><span className="mr-2">الملخصات والكتب</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary">
+              <FileText size={18} />
+              <span className="mr-2">الملخصات والكتب</span>
+            </h4>
             {subject.content?.summaries?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedSummaryId}>
-                  <SelectTrigger><SelectValue placeholder="اختر ملخصا او كتاب " /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر ملخصا او كتاب" />
+                  </SelectTrigger>
                   <SelectContent>
                     {subject.content.summaries.map(item => (
-                      <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.url} {/* عرض اسم الملخص بدلاً من الرابط */}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {(() => {
                   const summary = subject.content.summaries.find(i => i.id === selectedSummaryId);
                   return summary ? (
-                    <a href={summary.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline">فتح ملخص او كتاب</a>
+                    <a 
+                      href={summary.title} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
+                    >
+                      فتح ملخص او كتاب
+                      <ExternalLink size={14} className="mr-2" />
+                    </a>
                   ) : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا توجد كتب او ملخصات</p>}
 
             {/* الاختبارات */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><ClipboardCheck size={18} /><span className="mr-2">الاختبارات</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary">
+              <ClipboardCheck size={18} />
+              <span className="mr-2">الاختبارات</span>
+            </h4>
             {subject.content?.exams?.length > 0 ? (
               <>
                 <Select onValueChange={setSelectedExamId}>
-                  <SelectTrigger><SelectValue placeholder="اختر اختباراً" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر اختباراً" />
+                  </SelectTrigger>
                   <SelectContent>
                     {subject.content.exams.map(item => (
-                      <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.url} {/* عرض اسم الاختبار بدلاً من الرابط */}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {(() => {
                   const exam = subject.content.exams.find(i => i.id === selectedExamId);
                   return exam ? (
-                    <a href={exam.title} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm text-blue-600 hover:underline">فتح الاختبار</a>
+                    <a 
+                      href={exam.title} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
+                    >
+                      فتح الاختبار
+                      <ExternalLink size={14} className="mr-2" />
+                    </a>
                   ) : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا توجد اختبارات.</p>}
 
             {/* الفيديوهات */}
-            <h4 className="flex items-center text-md font-semibold my-2 text-primary"><Film size={18} /><span className="mr-2">شروحات الفيديو</span></h4>
+            <h4 className="flex items-center text-md font-semibold my-2 text-primary">
+              <Film size={18} />
+              <span className="mr-2">شروحات الفيديو</span>
+            </h4>
             {subject.content?.youtube?.length > 0 ? (
               <>
-                <Select onValueChange={setSelectedVideoId}>
-                  <SelectTrigger><SelectValue placeholder="اختر فيديو" /></SelectTrigger>
+                <Select onValueChange={(value) => handleVideoSelect(value, subject.content.youtube)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر فيديو" />
+                  </SelectTrigger>
                   <SelectContent>
                     {subject.content.youtube.map(item => (
-                      <SelectItem key={item.id} value={item.id}>{item.url}</SelectItem>
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.url} {/* عرض اسم الفيديو بدلاً من الرابط */}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {(() => {
-                  const video = subject.content.youtube.find(i => i.id === selectedVideoId);
-                  const embedUrl = video ? getYouTubeEmbedUrl(video.title) : null;
-                  return embedUrl ? (
-                    <div className="mt-2">
-                      <p className="font-semibold mb-1">{video.url}</p>
-                      <div className="aspect-video overflow-hidden rounded-lg border">
-                        <iframe src={embedUrl} width="100%" height="315" title={video.url} frameBorder="0" allowFullScreen></iframe>
-                      </div>
+                {currentVideo && selectedVideoId === subject.content.youtube.find(i => i.id === selectedVideoId)?.id && (
+                  <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+                    <p className="font-semibold mb-3 text-center">{currentVideo.title}</p>
+                    <div className="flex justify-center">
+                      <Button 
+                        onClick={openVideoDialog} 
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                      >
+                        <Play size={16} />
+                        تشغيل الفيديو
+                      </Button>
                     </div>
-                  ) : <p className="text-muted-foreground text-sm mt-2">اختر فيديو من القائمة لعرضه.</p>;
-                })()}
+                  </div>
+                )}
               </>
             ) : <p className="text-sm text-muted-foreground">لا توجد فيديوهات.</p>}
           </AccordionContent>
@@ -189,20 +272,21 @@ const StudentDashboardPage = () => {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">لوحة تحكم الطالب</h1>
-       <p className="text-right text-lg font-bold text-red-600">
-  مرحباً بك، {user?.name}
-</p>
-<p className="text-center text-xl font-bold text-primary my-4">
-  هنا تجد موادك الدراسية والمحتوى التعليمي
-</p>
-
+        <p className="text-right text-lg font-bold text-red-600">
+          مرحباً بك، {user?.name}
+        </p>
+        <p className="text-center text-xl font-bold text-primary my-4">
+          هنا تجد موادك الدراسية والمحتوى التعليمي
+        </p>
         <p className="text-muted-foreground mb-2">المرحلة التعليمية: {studentStage?.name || "غير محددة"}</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card className="shadow-lg">
-            <CardHeader><CardTitle>المواد الدراسية</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>المواد الدراسية</CardTitle>
+            </CardHeader>
             <CardContent>
               {studentStage?.semesterSystem === 'two-semesters' ? (
                 <Tabs defaultValue="semester1">
@@ -210,8 +294,12 @@ const StudentDashboardPage = () => {
                     <TabsTrigger value="semester1">الفصل الأول</TabsTrigger>
                     <TabsTrigger value="semester2">الفصل الثاني</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="semester1">{renderSubjectsAccordion(subjects.semesterOneSubjects)}</TabsContent>
-                  <TabsContent value="semester2">{renderSubjectsAccordion(subjects.semesterTwoSubjects)}</TabsContent>
+                  <TabsContent value="semester1">
+                    {renderSubjectsAccordion(subjects.semesterOneSubjects)}
+                  </TabsContent>
+                  <TabsContent value="semester2">
+                    {renderSubjectsAccordion(subjects.semesterTwoSubjects)}
+                  </TabsContent>
                 </Tabs>
               ) : (
                 renderSubjectsAccordion(subjects.semesterOneSubjects)
@@ -223,18 +311,30 @@ const StudentDashboardPage = () => {
         <div className="lg:col-span-1">
           <Card className="shadow-lg sticky top-24">
             <CardHeader>
-              <CardTitle className="flex items-center"><Video className="mr-2 text-primary" /> الغرف الافتراضية</CardTitle>
+              <CardTitle className="flex items-center">
+                <Video className="mr-2 text-primary" /> 
+                الغرف الافتراضية
+              </CardTitle>
               <CardDescription>روابط الحصص الأونلاين المباشرة.</CardDescription>
             </CardHeader>
             <CardContent>
               {onlineRooms.length > 0 ? (
                 <div className="space-y-3">
                   {onlineRooms.map(room => (
-                    <a key={room.id} href={room.url} target="_blank" rel="noopener noreferrer">
-                      <motion.div whileHover={{ scale: 1.05 }} className="p-4 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer">
+                    <a 
+                      key={room.id} 
+                      href={room.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <motion.div 
+                        whileHover={{ scale: 1.05 }} 
+                        className="p-4 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
+                      >
                         <p className="font-bold text-primary">{room.name}</p>
                         <p className="text-sm text-muted-foreground flex items-center">
-                          انقر للانضمام<ExternalLink size={14} className="ml-2 rtl:ml-0 rtl:mr-2" />
+                          انقر للانضمام
+                          <ExternalLink size={14} className="ml-2 rtl:ml-0 rtl:mr-2" />
                         </p>
                       </motion.div>
                     </a>
@@ -247,6 +347,29 @@ const StudentDashboardPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* Dialog لعرض الفيديو */}
+      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader>
+            <DialogTitle>{currentVideo?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="aspect-video overflow-hidden rounded-lg">
+            {currentVideo && (
+              <iframe 
+                src={currentVideo.url} 
+                width="100%" 
+                height="100%" 
+                title={currentVideo.title}
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+                className="min-h-[400px]"
+              ></iframe>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
