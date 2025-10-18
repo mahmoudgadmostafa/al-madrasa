@@ -27,10 +27,10 @@ const StudentDashboardPage = () => {
   const [subjects, setSubjects] = useState({ semesterOneSubjects: [], semesterTwoSubjects: [] });
   const [onlineRooms, setOnlineRooms] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
-  const [selectedVideoId, setSelectedVideoId] = useState(null);
-  const [selectedBookId, setSelectedBookId] = useState(null);
-  const [selectedSummaryId, setSelectedSummaryId] = useState(null);
-  const [selectedExamId, setSelectedExamId] = useState(null);
+  const [selectedVideo, setSelectedVideo] = useState({ subjectId: null, videoId: null });
+  const [selectedBook, setSelectedBook] = useState({ subjectId: null, bookId: null });
+  const [selectedSummary, setSelectedSummary] = useState({ subjectId: null, summaryId: null });
+  const [selectedExam, setSelectedExam] = useState({ subjectId: null, examId: null });
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [currentVideo, setCurrentVideo] = useState(null);
   const db = getFirestore();
@@ -83,15 +83,15 @@ const StudentDashboardPage = () => {
     }
   };
 
-  const handleVideoSelect = (videoId, videoList) => {
+  const handleVideoSelect = (videoId, subjectId, videoList) => {
     const video = videoList.find(i => i.id === videoId);
     if (video) {
-      setSelectedVideoId(videoId);
-      const embedUrl = getYouTubeEmbedUrl(video.title);
+      setSelectedVideo({ subjectId, videoId });
+      const embedUrl = getYouTubeEmbedUrl(video.url); // هنا يجب أن يكون video.url وليس video.title
       if (embedUrl) {
         setCurrentVideo({
           url: embedUrl,
-          title: video.url // استخدام الاسم بدلاً من الرابط
+          title: video.title || 'فيديو تعليمي' // استخدام العنوان الصحيح
         });
       }
     }
@@ -103,7 +103,48 @@ const StudentDashboardPage = () => {
     }
   };
 
-  const renderSubjectsAccordion = (subjectList) => (
+  const renderResourceLink = (resource, type) => {
+    if (!resource) return null;
+    
+    // إذا كان الرابط هو رابط يوتيوب، نعرضه في الدايلوج
+    if (type === 'youtube' && resource.url && resource.url.includes('youtube')) {
+      const embedUrl = getYouTubeEmbedUrl(resource.url);
+      if (embedUrl) {
+        return (
+          <Button 
+            onClick={() => {
+              setCurrentVideo({
+                url: embedUrl,
+                title: resource.title
+              });
+              setVideoDialogOpen(true);
+            }}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 mt-2"
+          >
+            <Play size={16} />
+            تشغيل الفيديو
+          </Button>
+        );
+      }
+    }
+    
+    // للروابط العادية، نفتحها في تاب جديد
+    return (
+      <a 
+        href={resource.url} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
+      >
+        {type === 'textbooks' && 'التحدث مع المساعد الذكي'}
+        {type === 'summaries' && 'فتح الملخص أو الكتاب'}
+        {type === 'exams' && 'فتح الاختبار'}
+        <ExternalLink size={14} className="mr-2" />
+      </a>
+    );
+  };
+
+  const renderSubjectsAccordion = (subjectList, semester) => (
     <Accordion type="single" collapsible className="w-full">
       {subjectList.map(subject => (
         <AccordionItem key={subject.id} value={subject.id}>
@@ -118,31 +159,24 @@ const StudentDashboardPage = () => {
             </h4>
             {subject.content?.textbooks?.length > 0 ? (
               <>
-                <Select onValueChange={setSelectedBookId}>
+                <Select onValueChange={(value) => {
+                  const book = subject.content.textbooks.find(i => i.id === value);
+                  setSelectedBook({ subjectId: subject.id, bookId: value });
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر مساعدك" />
                   </SelectTrigger>
                   <SelectContent>
                     {subject.content.textbooks.map(item => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.url} {/* عرض اسم المساعد بدلاً من الرابط */}
+                        {item.title || `مساعد ${subject.name}`} {/* عرض العنوان بدلاً من الرابط */}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {(() => {
-                  const book = subject.content.textbooks.find(i => i.id === selectedBookId);
-                  return book ? (
-                    <a 
-                      href={book.title} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
-                    >
-                      اضغط للتحدث مع مساعدك الذكي
-                      <ExternalLink size={14} className="mr-2" />
-                    </a>
-                  ) : null;
+                {selectedBook.subjectId === subject.id && (() => {
+                  const book = subject.content.textbooks.find(i => i.id === selectedBook.bookId);
+                  return book ? renderResourceLink(book, 'textbooks') : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا يوجد مساعد ذكي.</p>}
@@ -154,31 +188,24 @@ const StudentDashboardPage = () => {
             </h4>
             {subject.content?.summaries?.length > 0 ? (
               <>
-                <Select onValueChange={setSelectedSummaryId}>
+                <Select onValueChange={(value) => {
+                  const summary = subject.content.summaries.find(i => i.id === value);
+                  setSelectedSummary({ subjectId: subject.id, summaryId: value });
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر ملخصا او كتاب" />
                   </SelectTrigger>
                   <SelectContent>
                     {subject.content.summaries.map(item => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.url} {/* عرض اسم الملخص بدلاً من الرابط */}
+                        {item.title || `ملخص ${subject.name}`} {/* عرض العنوان بدلاً من الرابط */}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {(() => {
-                  const summary = subject.content.summaries.find(i => i.id === selectedSummaryId);
-                  return summary ? (
-                    <a 
-                      href={summary.title} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
-                    >
-                      فتح ملخص او كتاب
-                      <ExternalLink size={14} className="mr-2" />
-                    </a>
-                  ) : null;
+                {selectedSummary.subjectId === subject.id && (() => {
+                  const summary = subject.content.summaries.find(i => i.id === selectedSummary.summaryId);
+                  return summary ? renderResourceLink(summary, 'summaries') : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا توجد كتب او ملخصات</p>}
@@ -190,31 +217,24 @@ const StudentDashboardPage = () => {
             </h4>
             {subject.content?.exams?.length > 0 ? (
               <>
-                <Select onValueChange={setSelectedExamId}>
+                <Select onValueChange={(value) => {
+                  const exam = subject.content.exams.find(i => i.id === value);
+                  setSelectedExam({ subjectId: subject.id, examId: value });
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر اختباراً" />
                   </SelectTrigger>
                   <SelectContent>
                     {subject.content.exams.map(item => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.url} {/* عرض اسم الاختبار بدلاً من الرابط */}
+                        {item.title || `اختبار ${subject.name}`} {/* عرض العنوان بدلاً من الرابط */}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {(() => {
-                  const exam = subject.content.exams.find(i => i.id === selectedExamId);
-                  return exam ? (
-                    <a 
-                      href={exam.title} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="block mt-2 text-sm text-blue-600 hover:underline flex items-center"
-                    >
-                      فتح الاختبار
-                      <ExternalLink size={14} className="mr-2" />
-                    </a>
-                  ) : null;
+                {selectedExam.subjectId === subject.id && (() => {
+                  const exam = subject.content.exams.find(i => i.id === selectedExam.examId);
+                  return exam ? renderResourceLink(exam, 'exams') : null;
                 })()}
               </>
             ) : <p className="text-sm text-muted-foreground">لا توجد اختبارات.</p>}
@@ -226,19 +246,30 @@ const StudentDashboardPage = () => {
             </h4>
             {subject.content?.youtube?.length > 0 ? (
               <>
-                <Select onValueChange={(value) => handleVideoSelect(value, subject.content.youtube)}>
+                <Select onValueChange={(value) => {
+                  const video = subject.content.youtube.find(i => i.id === value);
+                  if (video) {
+                    const embedUrl = getYouTubeEmbedUrl(video.url);
+                    if (embedUrl) {
+                      setCurrentVideo({
+                        url: embedUrl,
+                        title: video.title || `فيديو ${subject.name}`
+                      });
+                    }
+                  }
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="اختر فيديو" />
                   </SelectTrigger>
                   <SelectContent>
                     {subject.content.youtube.map(item => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.url} {/* عرض اسم الفيديو بدلاً من الرابط */}
+                        {item.title || `فيديو ${subject.name}`} {/* عرض العنوان بدلاً من الرابط */}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {currentVideo && selectedVideoId === subject.content.youtube.find(i => i.id === selectedVideoId)?.id && (
+                {currentVideo && (
                   <div className="mt-4 p-4 border rounded-lg bg-gray-50">
                     <p className="font-semibold mb-3 text-center">{currentVideo.title}</p>
                     <div className="flex justify-center">
@@ -295,14 +326,14 @@ const StudentDashboardPage = () => {
                     <TabsTrigger value="semester2">الفصل الثاني</TabsTrigger>
                   </TabsList>
                   <TabsContent value="semester1">
-                    {renderSubjectsAccordion(subjects.semesterOneSubjects)}
+                    {renderSubjectsAccordion(subjects.semesterOneSubjects, 'semester1')}
                   </TabsContent>
                   <TabsContent value="semester2">
-                    {renderSubjectsAccordion(subjects.semesterTwoSubjects)}
+                    {renderSubjectsAccordion(subjects.semesterTwoSubjects, 'semester2')}
                   </TabsContent>
                 </Tabs>
               ) : (
-                renderSubjectsAccordion(subjects.semesterOneSubjects)
+                renderSubjectsAccordion(subjects.semesterOneSubjects, 'single')
               )}
             </CardContent>
           </Card>
@@ -326,6 +357,7 @@ const StudentDashboardPage = () => {
                       href={room.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      className="block"
                     >
                       <motion.div 
                         whileHover={{ scale: 1.05 }} 
