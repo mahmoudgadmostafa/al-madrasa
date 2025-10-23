@@ -4,11 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from "@/components/ui/use-toast";
-import { Users, UserPlus, Edit, Trash2, Save, ArrowLeft, Book, BookOpen, BookX, Settings } from 'lucide-react';
+import { Users, UserPlus, Edit, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom';
@@ -17,17 +14,14 @@ import AddUserModal from '@/components/admin/AddUserModal';
 const ManageStudentsPage = () => {
   const [students, setStudents] = useState([]);
   const [educationalStages, setEducationalStages] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState(null);
   const [studentName, setStudentName] = useState('');
   const [assignedStageId, setAssignedStageId] = useState('');
-  const [selectedSubjects, setSelectedSubjects] = useState([]);
 
   const db = getFirestore();
   const navigate = useNavigate();
@@ -35,26 +29,17 @@ const ManageStudentsPage = () => {
   const fetchInitialData = useCallback(async () => {
     setIsFetching(true);
     try {
-      // جلب بيانات الطلاب
       const studentsQuery = query(collection(db, "users"), where("role", "==", "student"));
       const studentsSnapshot = await getDocs(studentsQuery);
-      const fetchedStudents = studentsSnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data(),
-        activeSubjects: doc.data().activeSubjects || [] // المواد النشطة للطالب
-      }));
+      const fetchedStudents = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setStudents(fetchedStudents);
 
-      // جلب المراحل التعليمية
       const settingsRef = doc(db, "system_config", "school_system_settings");
       const settingsSnap = await getDoc(settingsRef);
-      if (settingsSnap.exists()) {
-        const settingsData = settingsSnap.data();
-        setEducationalStages(settingsData.educationalStages || []);
-        setSubjects(settingsData.subjects || []); // المواد التعليمية
+      if (settingsSnap.exists() && settingsSnap.data().educationalStages) {
+        setEducationalStages(settingsSnap.data().educationalStages);
       } else {
         setEducationalStages([]);
-        setSubjects([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -75,17 +60,11 @@ const ManageStudentsPage = () => {
     setIsEditModalOpen(true);
   };
 
-  const openSubjectsModal = (student) => {
-    setCurrentStudent(student);
-    setSelectedSubjects(student.activeSubjects || []);
-    setIsSubjectsModalOpen(true);
-  };
-
   const handleUserSaved = (savedUser, isNew) => {
     if (isNew && savedUser.role === 'student') {
-      setStudents(prev => [...prev, {...savedUser, activeSubjects: []}]);
+      setStudents(prev => [...prev, savedUser]);
     } else if (!isNew) {
-      setStudents(prev => prev.map(s => (s.id === savedUser.id ? {...savedUser, activeSubjects: s.activeSubjects} : s)));
+      setStudents(prev => prev.map(s => (s.id === savedUser.id ? savedUser : s)));
     }
   };
 
@@ -117,57 +96,6 @@ const ManageStudentsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleUpdateSubjects = async () => {
-    setIsLoading(true);
-    try {
-      const studentDocRef = doc(db, "users", currentStudent.id);
-      await updateDoc(studentDocRef, {
-        activeSubjects: selectedSubjects
-      });
-
-      // تحديث الحالة المحلية
-      setStudents(prev => prev.map(s => 
-        s.id === currentStudent.id 
-          ? { ...s, activeSubjects: selectedSubjects }
-          : s
-      ));
-
-      toast({ title: "نجاح", description: "تم تحديث المواد التعليمية للطالب بنجاح." });
-      setIsSubjectsModalOpen(false);
-    } catch (error) {
-      console.error("Error updating student subjects:", error);
-      toast({ title: "خطأ", description: `فشل تحديث المواد التعليمية: ${error.message}`, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubjectToggle = (subjectId) => {
-    setSelectedSubjects(prev => 
-      prev.includes(subjectId)
-        ? prev.filter(id => id !== subjectId)
-        : [...prev, subjectId]
-    );
-  };
-
-  const handleSelectAllSubjects = () => {
-    const allSubjectIds = subjects.map(subject => subject.id);
-    setSelectedSubjects(allSubjectIds);
-  };
-
-  const handleDeselectAllSubjects = () => {
-    setSelectedSubjects([]);
-  };
-
-  const getActiveSubjectsCount = (student) => {
-    return student.activeSubjects ? student.activeSubjects.length : 0;
-  };
-
-  const getSubjectName = (subjectId) => {
-    const subject = subjects.find(s => s.id === subjectId);
-    return subject ? subject.name : 'مادة غير معروفة';
   };
 
   const handleDeleteStudent = async (studentId) => {
@@ -209,7 +137,7 @@ const ManageStudentsPage = () => {
             العودة إلى لوحة التحكم
           </Button>
         </div>
-        <p className="text-muted-foreground">إنشاء حسابات للطلاب، تعديل بياناتهم، وإدارة المواد التعليمية النشطة لكل طالب.</p>
+        <p className="text-muted-foreground">إنشاء حسابات للطلاب، تعديل بياناتهم، وتوزيعهم على المراحل التعليمية.</p>
       </motion.div>
 
       <Button onClick={() => setIsAddUserModalOpen(true)} className="mb-6">
@@ -226,7 +154,6 @@ const ManageStudentsPage = () => {
         educationalStages={educationalStages}
       />
 
-      {/* Modal تعديل بيانات الطالب */}
       <AnimatePresence>
         {isEditModalOpen && (
           <motion.div
@@ -281,89 +208,6 @@ const ManageStudentsPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Modal إدارة المواد التعليمية */}
-      <AnimatePresence>
-        {isSubjectsModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setIsSubjectsModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-card p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Book className="ml-2 rtl:mr-2 h-5 w-5" />
-                  إدارة المواد التعليمية للطالب: {currentStudent?.name}
-                </CardTitle>
-                <CardDescription>
-                  اختر المواد التعليمية التي يمكن للطالب الوصول إليها
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm text-muted-foreground">
-                    {selectedSubjects.length} من أصل {subjects.length} مادة محددة
-                  </div>
-                  <div className="flex space-x-2 rtl:space-x-reverse">
-                    <Button variant="outline" size="sm" onClick={handleSelectAllSubjects}>
-                      تحديد الكل
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleDeselectAllSubjects}>
-                      إلغاء الكل
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {subjects.map(subject => (
-                    <div key={subject.id} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-lg">
-                      <Checkbox
-                        id={`subject-${subject.id}`}
-                        checked={selectedSubjects.includes(subject.id)}
-                        onCheckedChange={() => handleSubjectToggle(subject.id)}
-                      />
-                      <Label 
-                        htmlFor={`subject-${subject.id}`}
-                        className="flex-1 cursor-pointer flex items-center"
-                      >
-                        <BookOpen className="ml-2 rtl:mr-2 h-4 w-4 text-green-600" />
-                        {subject.name}
-                      </Label>
-                      <Badge variant={selectedSubjects.includes(subject.id) ? "default" : "secondary"}>
-                        {selectedSubjects.includes(subject.id) ? 'نشط' : 'غير نشط'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-
-                {subjects.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BookX className="mx-auto h-12 w-12 mb-4" />
-                    <p>لا توجد مواد تعليمية مضافة بعد</p>
-                    <p className="text-sm">يرجى إضافة المواد التعليمية من إعدادات النظام</p>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-end space-x-2 rtl:space-x-reverse">
-                <Button variant="outline" onClick={() => setIsSubjectsModalOpen(false)}>إلغاء</Button>
-                <Button onClick={handleUpdateSubjects} disabled={isLoading}>
-                  {isLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-                  <Save className="mr-1 ml-0 rtl:ml-1 rtl:mr-0 h-4 w-4" />
-                </Button>
-              </CardFooter>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="space-y-8">
         {studentsByStage.map(stage => (
           <div key={stage.id}>
@@ -375,7 +219,8 @@ const ManageStudentsPage = () => {
                     <tr>
                       <th className="border border-gray-300 px-4 py-2 text-right">الاسم</th>
                       <th className="border border-gray-300 px-4 py-2 text-right">البريد الإلكتروني</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">المواد النشطة</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">رقم الهاتف</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">كود الدخول</th>
                       <th className="border border-gray-300 px-4 py-2 text-right">تحكم</th>
                     </tr>
                   </thead>
@@ -384,31 +229,11 @@ const ManageStudentsPage = () => {
                       <tr key={student.id} className="hover:bg-primary/20 transition-colors">
                         <td className="border border-gray-300 px-4 py-2">{student.name}</td>
                         <td className="border border-gray-300 px-4 py-2">{student.email}</td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex items-center">
-                              <Badge variant={getActiveSubjectsCount(student) > 0 ? "default" : "secondary"}>
-                                <Book className="ml-1 rtl:mr-1 h-3 w-3" />
-                                {getActiveSubjectsCount(student)} مادة نشطة
-                              </Badge>
-                            </div>
-                            {student.activeSubjects && student.activeSubjects.length > 0 && (
-                              <div className="text-xs text-muted-foreground truncate max-w-xs">
-                                {student.activeSubjects.map(subjectId => getSubjectName(subjectId)).join('، ')}
-                              </div>
-                            )}
-                          </div>
-                        </td>
+                        <td className="border border-gray-300 px-4 py-2">{student.phone || '-'}</td>
+                        <td className="border border-gray-300 px-4 py-2">{student.loginCode || '-'}</td>
                         <td className="border border-gray-300 px-4 py-2 flex gap-2 justify-center">
                           <Button variant="outline" size="sm" onClick={() => openModalForEdit(student)}>
                             <Edit size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> تعديل
-                          </Button>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => openSubjectsModal(student)}
-                          >
-                            <Settings size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> المواد
                           </Button>
                           <Button variant="destructive" size="sm" onClick={() => handleDeleteStudent(student.id)} disabled={isLoading}>
                             <Trash2 size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> حذف
@@ -437,7 +262,8 @@ const ManageStudentsPage = () => {
                     <tr>
                       <th className="border border-gray-300 px-4 py-2 text-right">الاسم</th>
                       <th className="border border-gray-300 px-4 py-2 text-right">البريد الإلكتروني</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">المواد النشطة</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">رقم الهاتف</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right">كود الدخول</th>
                       <th className="border border-gray-300 px-4 py-2 text-right">تحكم</th>
                     </tr>
                   </thead>
@@ -446,31 +272,11 @@ const ManageStudentsPage = () => {
                       <tr key={student.id} className="hover:bg-destructive/20 transition-colors">
                         <td className="border border-gray-300 px-4 py-2">{student.name}</td>
                         <td className="border border-gray-300 px-4 py-2">{student.email}</td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <div className="flex flex-col space-y-1">
-                            <div className="flex items-center">
-                              <Badge variant={getActiveSubjectsCount(student) > 0 ? "default" : "secondary"}>
-                                <Book className="ml-1 rtl:mr-1 h-3 w-3" />
-                                {getActiveSubjectsCount(student)} مادة نشطة
-                              </Badge>
-                            </div>
-                            {student.activeSubjects && student.activeSubjects.length > 0 && (
-                              <div className="text-xs text-muted-foreground truncate max-w-xs">
-                                {student.activeSubjects.map(subjectId => getSubjectName(subjectId)).join('، ')}
-                              </div>
-                            )}
-                          </div>
-                        </td>
+                        <td className="border border-gray-300 px-4 py-2">{student.phone || '-'}</td>
+                        <td className="border border-gray-300 px-4 py-2">{student.loginCode || '-'}</td>
                         <td className="border border-gray-300 px-4 py-2 flex gap-2 justify-center">
                           <Button variant="outline" size="sm" onClick={() => openModalForEdit(student)}>
                             <Edit size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> تعديل
-                          </Button>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => openSubjectsModal(student)}
-                          >
-                            <Settings size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> المواد
                           </Button>
                           <Button variant="destructive" size="sm" onClick={() => handleDeleteStudent(student.id)} disabled={isLoading}>
                             <Trash2 size={14} className="mr-1 ml-0 rtl:ml-1 rtl:mr-0" /> حذف
