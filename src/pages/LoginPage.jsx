@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,20 +23,31 @@ const contactOptions = [
   },
   {
     label: 'صفحتنا على فيسبوك',
-    link: 'https://web.facebook.com/madrasati.26',
+    link: 'https://web.facebook.com/maharet.edu',
     color: 'bg-primary',
     icon: <Facebook className="w-4 h-4 mr-2 text-white" />,
   },
 ];
 
 const LoginPage = () => {
-  const [identifier, setIdentifier] = useState(''); // كود  أو إيميل
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loadingAuth, schoolSettings, isAuthenticated, user } = useAuth();
+  const { login, loadingAuth, schoolSettings, isAuthenticated, user, authChecked } = useAuth();
   const [currentSchoolName, setCurrentSchoolName] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const [index, setIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const redirectAttempted = useRef(false);
+
+  useEffect(() => {
+    console.log('📍 LoginPage State:', { 
+      isAuthenticated, 
+      userRole: user?.role, 
+      authChecked, 
+      redirectAttempted: redirectAttempted.current 
+    });
+  });
 
   useEffect(() => {
     if (schoolSettings?.schoolName) {
@@ -44,14 +55,26 @@ const LoginPage = () => {
     }
   }, [schoolSettings]);
 
+  // التوجيه التلقائي عندما يكون المستخدم مسجلاً
   useEffect(() => {
-    if (!loadingAuth && isAuthenticated && user) {
-      const from =
-        location.state?.from?.pathname ||
-        (user.role === 'admin' ? '/admin' : user.role === 'teacher' ? '/teacher' : '/student');
-      navigate(from, { replace: true });
+    if (authChecked && isAuthenticated && user?.role && !redirectAttempted.current) {
+      redirectAttempted.current = true;
+      
+      const targetPath = user.role === 'admin' ? '/admin' : 
+                        user.role === 'teacher' ? '/teacher' : 
+                        '/student';
+      
+      const from = location.state?.from?.pathname || targetPath;
+      
+      console.log('🔄 Auto-redirecting to:', from, 'Role:', user.role);
+      
+      // تأخير بسيط لضمان استقرار التطبيق
+      setTimeout(() => {
+        console.log('🚀 Navigating now to:', from);
+        navigate(from, { replace: true });
+      }, 100);
     }
-  }, [isAuthenticated, loadingAuth, user, navigate, location.state]);
+  }, [isAuthenticated, user, authChecked, navigate, location.state]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,22 +84,48 @@ const LoginPage = () => {
   }, []);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!loadingAuth) {
+    e.preventDefault();
+    if (loadingAuth || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    redirectAttempted.current = false; // إعادة تعيين قبل محاولة جديدة
+    console.log('🎯 Form submitted, reset redirectAttempted');
+    
     try {
       const trimmedIdentifier = identifier.trim().toLowerCase();
       const finalEmail = trimmedIdentifier.includes('@') 
         ? trimmedIdentifier 
         : `${trimmedIdentifier}@myapp.com`;
 
-      await login(finalEmail, password);
+      console.log('🔐 Attempting login with:', finalEmail);
+      const result = await login(finalEmail, password);
+      
+      if (result.success) {
+        console.log('✅ Login successful in handleSubmit, waiting for redirect...');
+        // التوجيه سيحدث تلقائياً عبر useEffect أعلاه
+      }
     } catch (err) {
-      alert('بيانات الدخول غير صحيحة');
+      console.error('❌ Login error in handleSubmit:', err);
+      redirectAttempted.current = false; // إعادة تعيين في حالة الخطأ
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  // شاشة تحميل أثناء التحقق الأولي من المصادقة
+  if (!authChecked) {
+    console.log('⏳ Showing loading screen - auth not checked yet');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">جاري التحضير...</p>
+        </div>
+      </div>
+    );
   }
-};
 
-
+  console.log('🎨 Rendering login form');
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
@@ -114,8 +163,12 @@ const LoginPage = () => {
                   className="text-lg"
                 />
               </div>
-              <Button type="submit" className="w-full text-lg py-3 bg-primary hover:bg-primary/90" disabled={loadingAuth}>
-                {loadingAuth ? (
+              <Button 
+                type="submit" 
+                className="w-full text-lg py-3 bg-primary hover:bg-primary/90" 
+                disabled={loadingAuth || isSubmitting}
+              >
+                {loadingAuth || isSubmitting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground"></div>
                 ) : (
                   <>
@@ -135,7 +188,7 @@ const LoginPage = () => {
 
       <div className="mt-10">
         <p className="text-center text-sm font-semibold text-muted-foreground mb-2">
-          📢  للتواصل مع إدارة الموقع للحصول علي الكود وكلمة المرور
+          📢  للتواصل مع إدارة الموقع للحصول علي الكود والرقم السري
         </p>
         <div className="w-full max-w-md">
           <div className={`text-white text-sm py-2 px-4 rounded-md text-center ${contactOptions[index].color}`}>
