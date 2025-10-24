@@ -22,10 +22,19 @@ import ProfilePage from '@/pages/ProfilePage';
 import { School } from 'lucide-react';
 
 const ProtectedRoute = ({ allowedRoles }) => {
-  const { user, isAuthenticated, loadingAuth } = useAuth();
+  const { user, isAuthenticated, loadingAuth, authChecked } = useAuth();
   const location = useLocation();
 
-  if (loadingAuth) {
+  console.log('🛡️ ProtectedRoute Check:', {
+    path: location.pathname,
+    allowedRoles,
+    userRole: user?.role,
+    isAuthenticated,
+    loadingAuth,
+    authChecked
+  });
+
+  if (loadingAuth || !authChecked) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
@@ -33,22 +42,43 @@ const ProtectedRoute = ({ allowedRoles }) => {
     );
   }
 
-  if (user && user.role === undefined) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
-    </div>
-  );
-}
-
   if (!isAuthenticated) {
+    console.log('🔐 Not authenticated, redirecting to login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && user && (!user.role || !allowedRoles.includes(user.role))) {
-    return <Navigate to="/unauthorized" replace />;
+  // إذا لم يتم تحميل role بعد، انتظر
+  if (!user?.role) {
+    console.log('⏳ User role not loaded yet, waiting...');
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+        <p className="ml-4 text-lg text-foreground">جاري تحميل الصلاحيات...</p>
+      </div>
+    );
   }
 
+  // تحقق من الصلاحيات فقط بعد التأكد من وجود role
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    console.log('🚫 Role mismatch:', {
+      userRole: user.role,
+      allowedRoles,
+      path: location.pathname
+    });
+    
+    // بدلاً من /unauthorized، وجه إلى Dashboard المناسب
+    if (user.role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    } else if (user.role === 'teacher') {
+      return <Navigate to="/teacher" replace />;
+    } else if (user.role === 'student') {
+      return <Navigate to="/student" replace />;
+    } else {
+      return <Navigate to="/login" replace />;
+    }
+  }
+
+  console.log('✅ Access granted for role:', user.role);
   return <Outlet />;
 };
 
@@ -64,15 +94,18 @@ const PageLayout = ({ children }) => (
 );
 
 const App = () => {
-  const { isAuthenticated, user, loadingAuth, schoolSettings } = useAuth();
+  const { isAuthenticated, user, loadingAuth, schoolSettings, authChecked } = useAuth();
   const location = useLocation();
   const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png";
 
-  if (loadingAuth && location.pathname !== '/login') {
+  // تحسين شاشة التحميل
+  if ((loadingAuth || !authChecked) && location.pathname !== '/login') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-primary"></div>
-        <p className="ml-4 text-lg text-foreground">جاري تحميل التطبيق...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-foreground">جاري تحميل التطبيق...</p>
+        </div>
       </div>
     );
   }
@@ -117,7 +150,7 @@ const App = () => {
             </Route>
 
             <Route path="/" element={
-              loadingAuth ? (
+              (loadingAuth || !authChecked) ? (
                 <div className="flex items-center justify-center min-h-screen">
                   <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
                   <p className="ml-4 text-lg text-foreground">جاري التحميل...</p>
@@ -134,12 +167,18 @@ const App = () => {
               )
             } />
 
+            {/* يمكنك إزالة صفحة /unauthorized أو تعديلها */}
             <Route path="/unauthorized" element={
               <PageLayout>
                 <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
                   <School size={64} className="text-destructive mb-4" />
                   <h1 className="text-3xl font-bold text-destructive mb-2">غير مصرح لك بالدخول</h1>
-                  <p className="text-muted-foreground">ليس لديك الأذونات اللازمة لعرض هذه الصفحة.</p>
+                  <p className="text-muted-foreground mb-4">ليس لديك الأذونات اللازمة لعرض هذه الصفحة.</p>
+                  {user && (
+                    <p className="text-sm text-muted-foreground">
+                      أنت مسجل كـ: {user.role}
+                    </p>
+                  )}
                 </div>
               </PageLayout>
             } />
