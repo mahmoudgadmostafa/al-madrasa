@@ -33,31 +33,33 @@ const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const { login, loadingAuth, schoolSettings, isAuthenticated, user, authChecked } = useAuth();
-  const [currentSchoolName, setCurrentSchoolName] = useState('');
+  const [currentSchoolName, setCurrentSchoolName] = useState('نظام المدارس');
   const navigate = useNavigate();
   const location = useLocation();
   const [index, setIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localAuthChecked, setLocalAuthChecked] = useState(false);
   const redirectAttempted = useRef(false);
 
-  useEffect(() => {
-    console.log('📍 LoginPage State:', { 
-      isAuthenticated, 
-      userRole: user?.role, 
-      authChecked, 
-      redirectAttempted: redirectAttempted.current 
-    });
-  });
-
+  // تحسين: استخدام قيمة افتراضية لاسم المدرسة
   useEffect(() => {
     if (schoolSettings?.schoolName) {
       setCurrentSchoolName(schoolSettings.schoolName);
     }
   }, [schoolSettings]);
 
-  // التوجيه التلقائي عندما يكون المستخدم مسجلاً
+  // تحسين: فحص أسرع للمصادقة
   useEffect(() => {
-    if (authChecked && isAuthenticated && user?.role && !redirectAttempted.current) {
+    const timer = setTimeout(() => {
+      setLocalAuthChecked(true);
+    }, 1500); // وقت أقل للتحقق
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // تحسين: تبسيط التوجيه التلقائي
+  useEffect(() => {
+    if ((authChecked || localAuthChecked) && isAuthenticated && user?.role && !redirectAttempted.current) {
       redirectAttempted.current = true;
       
       const targetPath = user.role === 'admin' ? '/admin' : 
@@ -66,30 +68,30 @@ const LoginPage = () => {
       
       const from = location.state?.from?.pathname || targetPath;
       
-      console.log('🔄 Auto-redirecting to:', from, 'Role:', user.role);
+      console.log('🔄 Auto-redirecting to:', from);
       
-      // تأخير بسيط لضمان استقرار التطبيق
+      // تأخير أقل
       setTimeout(() => {
-        console.log('🚀 Navigating now to:', from);
         navigate(from, { replace: true });
-      }, 100);
+      }, 50);
     }
-  }, [isAuthenticated, user, authChecked, navigate, location.state]);
+  }, [isAuthenticated, user, authChecked, localAuthChecked, navigate, location.state]);
 
+  // تحسين: إضافة مؤقت للرسائل المتغيرة
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % contactOptions.length);
-    }, 4000);
+    }, 3000); // وقت أقل للتبديل
     return () => clearInterval(timer);
   }, []);
 
+  // تحسين: تبسيط دالة التسجيل
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loadingAuth || isSubmitting) return;
     
     setIsSubmitting(true);
-    redirectAttempted.current = false; // إعادة تعيين قبل محاولة جديدة
-    console.log('🎯 Form submitted, reset redirectAttempted');
+    redirectAttempted.current = false;
     
     try {
       const trimmedIdentifier = identifier.trim().toLowerCase();
@@ -97,113 +99,162 @@ const LoginPage = () => {
         ? trimmedIdentifier 
         : `${trimmedIdentifier}@myapp.com`;
 
-      console.log('🔐 Attempting login with:', finalEmail);
-      const result = await login(finalEmail, password);
-      
-      if (result.success) {
-        console.log('✅ Login successful in handleSubmit, waiting for redirect...');
-        // التوجيه سيحدث تلقائياً عبر useEffect أعلاه
-      }
+      await login(finalEmail, password);
+      // لا حاجة لمعالجة النتيجة - useEffect سيتولى التوجيه
     } catch (err) {
-      console.error('❌ Login error in handleSubmit:', err);
-      redirectAttempted.current = false; // إعادة تعيين في حالة الخطأ
+      console.error('❌ Login error:', err);
+      redirectAttempted.current = false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // شاشة تحميل أثناء التحقق الأولي من المصادقة
-  if (!authChecked) {
-    console.log('⏳ Showing loading screen - auth not checked yet');
+  // تحسين: شاشة تحميل أكثر كفاءة
+  const isLoading = !authChecked && !localAuthChecked;
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري التحضير...</p>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="mx-auto mb-4"
+          >
+            <School className="w-16 h-16 text-primary" />
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground text-lg"
+          >
+            جاري التحضير...
+          </motion.p>
         </div>
       </div>
     );
   }
 
-  console.log('🎨 Rendering login form');
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
-        <Card className="w-full max-w-md shadow-2xl">
-          <CardHeader className="text-center">
-            <motion.div className="mx-auto mb-4" animate={{ rotateY: [0, 360] }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="shadow-2xl border-0">
+          <CardHeader className="text-center pb-4">
+            <motion.div 
+              className="mx-auto mb-4"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               <School className="w-16 h-16 text-primary" />
             </motion.div>
-            <CardTitle className="text-3xl font-bold">مرحباً بك في نظام {currentSchoolName}</CardTitle>
-            <CardDescription>الرجاء تسجيل الدخول للمتابعة</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground">
+              مرحباً بك في {currentSchoolName}
+            </CardTitle>
+            <CardDescription className="text-sm mt-2">
+              الرجاء تسجيل الدخول للمتابعة
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          
+          <CardContent className="pb-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="identifier"> الكود أو البريد</Label>
+                <Label htmlFor="identifier" className="text-sm font-medium">
+                  الكود أو البريد الإلكتروني
+                </Label>
                 <Input
                   id="identifier"
                   type="text"
-                  placeholder="الكود أو البريد"
+                  placeholder="أدخل الكود أو البريد الإلكتروني"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required
-                  className="text-lg"
+                  className="h-12 text-base"
+                  autoComplete="username"
                 />
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password" className="text-sm font-medium">
+                  كلمة المرور
+                </Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="ادخل كلمة المرور"
+                  placeholder="أدخل كلمة المرور"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="text-lg"
+                  className="h-12 text-base"
+                  autoComplete="current-password"
                 />
               </div>
+              
               <Button 
                 type="submit" 
-                className="w-full text-lg py-3 bg-primary hover:bg-primary/90" 
+                className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90 transition-colors" 
                 disabled={loadingAuth || isSubmitting}
               >
                 {loadingAuth || isSubmitting ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent"></div>
+                    <span>جاري التسجيل...</span>
+                  </div>
                 ) : (
-                  <>
-                    <LogIn className="mr-2 ml-0 h-5 w-5" />
-                    تسجيل الدخول
-                  </>
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    <span>تسجيل الدخول</span>
+                  </div>
                 )}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col items-center text-center text-sm text-muted-foreground mt-2 space-y-1">
-            <p className="font-semibold text-xs text-muted-foreground">جميع الحقوق محفوظة © 2025</p>
-            <p className="font-semibold text-xs text-muted-foreground">تصميم وتطوير بواسطة أ/ محمود جاد مصطفى</p>
+          
+          <CardFooter className="flex flex-col items-center text-center pt-4 border-t">
+            <p className="text-xs text-muted-foreground font-medium">
+              جميع الحقوق محفوظة © 2025
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              تصميم وتطوير بواسطة أ/ محمود جاد مصطفى
+            </p>
           </CardFooter>
         </Card>
       </motion.div>
 
-      <div className="mt-10">
-        <p className="text-center text-sm font-semibold text-muted-foreground mb-2">
-          📢  للتواصل مع إدارة الموقع للحصول علي الكود والرقم السري
+      {/* قسم التواصل */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="mt-8 w-full max-w-md"
+      >
+        <p className="text-center text-sm font-medium text-muted-foreground mb-3">
+          📢 للتواصل مع إدارة الموقع للحصول على الكود والرقم السري
         </p>
-        <div className="w-full max-w-md">
-          <div className={`text-white text-sm py-2 px-4 rounded-md text-center ${contactOptions[index].color}`}>
-            <a
-              href={contactOptions[index].link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center hover:underline"
-            >
-              {contactOptions[index].icon}
-              {contactOptions[index].label}
-            </a>
-          </div>
-        </div>
-      </div>
+        
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          className={`text-white text-sm py-3 px-4 rounded-lg text-center ${contactOptions[index].color} shadow-md`}
+        >
+          <a
+            href={contactOptions[index].link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center hover:underline transition-all duration-200"
+          >
+            {contactOptions[index].icon}
+            {contactOptions[index].label}
+          </a>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
