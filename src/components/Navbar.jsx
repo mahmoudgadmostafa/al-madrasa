@@ -14,7 +14,7 @@ const Navbar = () => {
   const { user, logout, schoolSettings } = useAuth();
   const { unreadChatsCount } = useChat();
   const navigate = useNavigate();
-  const [currentSchoolName, setCurrentSchoolName] = useState('مدرستنا تك');
+  const [currentSchoolName, setCurrentSchoolName] = useState(' ');
   const logoUrl = "/og.png";
 
   useEffect(() => {
