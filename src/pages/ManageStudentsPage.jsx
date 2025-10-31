@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "@/components/ui/use-toast";
-import { Users, Edit, Trash2, Save, ArrowLeft, Book, BookOpen, BookX, Settings, Phone, Key, User, Mail } from 'lucide-react';
+import { Users, Edit, Trash2, Save, ArrowLeft, Book, BookOpen, BookX, Settings, Phone, Key, User, Mail, UserPlus } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom';
+import AddUserModal from '@/components/admin/AddUserModal';
 
 // مكون Checkbox
 const Checkbox = ({ checked, onCheckedChange, id, disabled = false }) => {
@@ -33,6 +34,7 @@ const ManageStudentsPage = () => {
   // حالات النوافذ المنبثقة
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [currentStudent, setCurrentStudent] = useState(null);
   
   // بيانات النماذج
@@ -48,6 +50,23 @@ const ManageStudentsPage = () => {
 
   const db = getFirestore();
   const navigate = useNavigate();
+
+  // دالة التعامل مع حفظ المستخدم الجديد
+  const handleUserSaved = useCallback((savedUser, isNew) => {
+    if (isNew) {
+      setStudents(prev => [...prev, savedUser]);
+      toast({
+        title: "تم الإنشاء بنجاح",
+        description: "تم إنشاء حساب الطالب الجديد بنجاح"
+      });
+    } else {
+      setStudents(prev => prev.map(s => (s.id === savedUser.id ? savedUser : s)));
+      toast({
+        title: "تم التحديث بنجاح", 
+        description: "تم تحديث بيانات الطالب بنجاح"
+      });
+    }
+  }, []);
 
   // 🔄 دالة محسنة لجلب المواد مع معالجة أفضل للأسماء
   const fetchSubjectsForStage = useCallback(async (stageId) => {
@@ -409,6 +428,31 @@ const ManageStudentsPage = () => {
           العودة للوحة التحكم
         </Button>
       </div>
+
+      {/* زر إنشاء حساب طالب جديد */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">قائمة الطلاب</h2>
+          <p className="text-gray-600">إدارة حسابات الطلاب والمواد التعليمية</p>
+        </div>
+        <Button 
+          onClick={() => setIsAddUserModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <UserPlus className="ml-2 h-5 w-5" />
+          إنشاء حساب طالب
+        </Button>
+      </div>
+
+      {/* مكون إنشاء حساب طالب جديد */}
+      <AddUserModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        onSave={handleUserSaved}
+        db={db}
+        defaultRole="student"
+        educationalStages={educationalStages}
+      />
 
       {/* ✏️ نافذة تعديل الطالب */}
       <AnimatePresence>
