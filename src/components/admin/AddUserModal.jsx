@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from "@/components/ui/use-toast";
 import { UserPlus, Upload } from 'lucide-react';
 import { getAuth as getAuthInstance, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { getApp } from "firebase/app";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -17,6 +17,7 @@ import { saveAs } from "file-saver";
 const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalStages }) => {
   const [activeTab, setActiveTab] = useState('single');
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const [userName, setUserName] = useState('');
   const [loginCode, setLoginCode] = useState('');
@@ -27,8 +28,28 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
   const [assignedStageId, setAssignedStageId] = useState('');
 
   const [importPreview, setImportPreview] = useState([]);
-  const [isImporting, setIsImporting] = useState(false);
+  const [emailDomain, setEmailDomain] = useState("myapp.com"); // ✅ قيمة افتراضية مؤقتة
 
+  // ✅ قراءة النطاق من Firestore مرة واحدة عند فتح المكون
+  useEffect(() => {
+    const fetchEmailDomain = async () => {
+      try {
+        const docRef = doc(db, "system_config", "school_system_settings");
+        const snap = await getDoc(docRef);
+        if (snap.exists() && snap.data().emailDomain) {
+          setEmailDomain(snap.data().emailDomain);
+          console.log("📧 تم جلب نطاق الإيميل:", snap.data().emailDomain);
+        } else {
+          console.warn("⚠️ لم يتم العثور على emailDomain في الإعدادات");
+        }
+      } catch (error) {
+        console.error("❌ خطأ أثناء جلب نطاق الإيميل:", error);
+      }
+    };
+    if (isOpen) fetchEmailDomain();
+  }, [db, isOpen]);
+
+  // ✅ التحقق من صحة الحقول اليدوية
   const validateForm = () => {
     if (!userName.trim() || !loginCode.trim() || !userPassword.trim()) {
       toast({ title: "خطأ في الإدخال", description: "الاسم، كود الدخول، وكلمة المرور مطلوبة.", variant: "destructive" });
@@ -45,11 +66,12 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
     return true;
   };
 
+  // ✅ إنشاء حساب يدوي باستخدام النطاق من الإعدادات
   const handleSaveManual = async () => {
     if (!validateForm()) return;
     setIsLoading(true);
     try {
-      const fakeEmail = `${loginCode}@myapp.com`;
+      const fakeEmail = `${loginCode}@${emailDomain}`;
       const app = getApp('admin-creation-app');
       const auth = getAuthInstance(app);
       const userCredential = await createUserWithEmailAndPassword(auth, fakeEmail, userPassword);
@@ -99,6 +121,7 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
     }
   };
 
+  // ✅ معالجة رفع ملف Excel
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -118,6 +141,7 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
     reader.readAsArrayBuffer(file);
   };
 
+  // ✅ استيراد الحسابات من Excel باستخدام النطاق من Firestore
   const handleBulkImport = async () => {
     if (importPreview.length === 0) {
       toast({ title: "لا توجد بيانات", description: "يرجى رفع ملف Excel أولاً.", variant: "destructive" });
@@ -131,7 +155,7 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
     for (const row of importPreview) {
       try {
         const code = row['الكود'] || row['كود الدخول'] || row['loginCode'] || Math.random().toString(36).substr(2, 6).toUpperCase();
-        const email = `${code}@myapp.com`;
+        const email = `${code}@${emailDomain}`;
         const password = row['كلمة المرور'] || '123456';
         const name = row['الاسم'] || 'طالب جديد';
         const stageName = row['المرحلة التعليمية'] || row['المرحلة'] || '';
@@ -166,24 +190,19 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
     onClose();
   };
 
-  // 📥 إنشاء وتحميل نموذج Excel يحتوي على ورقتين (نموذج + المراحل)
+  // 📥 تحميل نموذج Excel
   const downloadTemplateExcel = () => {
     const headers = [
       ['الاسم', 'الكود', 'كلمة المرور', 'اسم الدخول (اختياري)', 'رقم الهاتف (اختياري)', 'المرحلة التعليمية']
     ];
-    const exampleRow = [
-      ['أحمد علي', 'S123', '123456', 'ahmadali', '0501234567', 'المرحلة الابتدائية']
-    ];
+    const exampleRow = [['أحمد علي', 'S123', '123456', 'ahmadali', '0501234567', 'المرحلة الابتدائية']];
     const wb = XLSX.utils.book_new();
     const wsTemplate = XLSX.utils.aoa_to_sheet([...headers, ...exampleRow]);
     XLSX.utils.book_append_sheet(wb, wsTemplate, 'نموذج_استيراد');
 
-    // 📘 إنشاء ورقة المراحل التعليمية
     if (educationalStages?.length > 0) {
       const stageData = [['اسم المرحلة التعليمية']];
-      educationalStages.forEach(stage => {
-        stageData.push([stage.name]);
-      });
+      educationalStages.forEach(stage => stageData.push([stage.name]));
       const wsStages = XLSX.utils.aoa_to_sheet(stageData);
       XLSX.utils.book_append_sheet(wb, wsStages, 'المراحل التعليمية');
     }
@@ -194,20 +213,8 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
-            className="bg-card p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+          <motion.div className="bg-card p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <CardHeader>
               <CardTitle>إضافة / استيراد حسابات المستخدمين</CardTitle>
             </CardHeader>
@@ -219,66 +226,58 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
                   <TabsTrigger value="bulk">استيراد من Excel</TabsTrigger>
                 </TabsList>
 
-                {/* 🔹 الإنشاء اليدوي */}
+                {/* إنشاء يدوي */}
                 <TabsContent value="single">
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="userName">اسم المستخدم</Label>
-                      <Input id="userName" value={userName} onChange={(e) => setUserName(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="loginCode">كود الدخول</Label>
-                      <Input id="loginCode" value={loginCode} onChange={(e) => setLoginCode(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="userPassword">كلمة المرور</Label>
-                      <Input id="userPassword" type="password" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="username">اسم الدخول (اختياري)</Label>
-                      <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">رقم الهاتف (اختياري)</Label>
-                      <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="userRole">الدور</Label>
-                      <Select value={role} onValueChange={setRole}>
-                        <SelectTrigger id="userRole">
-                          <SelectValue placeholder="اختر الدور" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="student">طالب</SelectItem>
-                          <SelectItem value="teacher">معلم</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Label htmlFor="userName">اسم المستخدم</Label>
+                    <Input id="userName" value={userName} onChange={(e) => setUserName(e.target.value)} />
+
+                    <Label htmlFor="loginCode">كود الدخول</Label>
+                    <Input id="loginCode" value={loginCode} onChange={(e) => setLoginCode(e.target.value)} />
+
+                    <Label htmlFor="userPassword">كلمة المرور</Label>
+                    <Input id="userPassword" type="password" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
+
+                    <Label htmlFor="username">اسم الدخول (اختياري)</Label>
+                    <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+
+                    <Label htmlFor="phone">رقم الهاتف (اختياري)</Label>
+                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+
+                    <Label htmlFor="userRole">الدور</Label>
+                    <Select value={role} onValueChange={setRole}>
+                      <SelectTrigger id="userRole">
+                        <SelectValue placeholder="اختر الدور" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">طالب</SelectItem>
+                        <SelectItem value="teacher">معلم</SelectItem>
+                      </SelectContent>
+                    </Select>
+
                     {role === 'student' && (
-                      <div>
+                      <>
                         <Label htmlFor="assignedStageId">المرحلة التعليمية</Label>
                         <Select value={assignedStageId} onValueChange={setAssignedStageId}>
                           <SelectTrigger id="assignedStageId">
                             <SelectValue placeholder="اختر المرحلة" />
                           </SelectTrigger>
                           <SelectContent>
-                            {educationalStages.map((s) => (
+                            {educationalStages.map(s => (
                               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
+                      </>
                     )}
                   </div>
                 </TabsContent>
 
-                {/* 🔹 استيراد من Excel */}
+                {/* استيراد Excel */}
                 <TabsContent value="bulk">
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="excelFile">رفع ملف Excel</Label>
-                      <Input id="excelFile" type="file" accept=".xlsx,.xls" onChange={handleFileUpload} />
-                    </div>
+                    <Label htmlFor="excelFile">رفع ملف Excel</Label>
+                    <Input id="excelFile" type="file" accept=".xlsx,.xls" onChange={handleFileUpload} />
 
                     {importPreview.length > 0 && (
                       <div className="bg-gray-50 rounded-lg p-3">
@@ -292,19 +291,11 @@ const AddUserModal = ({ isOpen, onClose, onSave, db, defaultRole, educationalSta
                     )}
 
                     <div className="flex flex-col sm:flex-row justify-between gap-2 mt-4">
-                      <Button
-                        onClick={downloadTemplateExcel}
-                        variant="outline"
-                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 w-full sm:w-auto"
-                      >
+                      <Button onClick={downloadTemplateExcel} variant="outline" className="bg-blue-50 hover:bg-blue-100 text-blue-700 w-full sm:w-auto">
                         📥 تحميل نموذج Excel
                       </Button>
 
-                      <Button
-                        onClick={handleBulkImport}
-                        disabled={isImporting || importPreview.length === 0}
-                        className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                      >
+                      <Button onClick={handleBulkImport} disabled={isImporting || importPreview.length === 0} className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                         {isImporting ? "جاري الاستيراد..." : "استيراد الحسابات"}
                         <Upload className="ml-2 h-4 w-4" />
                       </Button>
