@@ -15,7 +15,7 @@ const Navbar = () => {
   const { unreadChatsCount } = useChat();
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
-  const logoUrl = "/og.png";
+  const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png";
 
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
@@ -51,14 +51,13 @@ const Navbar = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to={getDashboardLink()} className="flex items-center space-x-2 rtl:space-x-reverse text-primary hover:text-primary/80 transition-colors">
-           <motion.img 
-  src={logoUrl} 
-  alt="شعار المدرسة" 
-  className="h-10 w-10 object-contain"
-  animate={{ rotate: [0, 10, -10, 10, 0] }}
-  transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
-/>
-
+            <motion.img 
+              src={logoUrl} 
+              alt="School Logo" 
+              className="h-10 w-10"
+              animate={{ rotate: [0, 10, -10, 10, 0] }}
+              transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
+            />
             <span className="text-xl font-bold">{currentSchoolName}</span>
           </Link>
           

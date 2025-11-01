@@ -3,6 +3,10 @@
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
 >
   <url>
+    <loc>https://madrasa-tach.netlify.app/</loc>
+    <priority>1.00</priority>
+  </url>
+  <url>
     <loc>https://madrasa-tach.netlify.app/login</loc>
     <priority>0.80</priority>
   </url>

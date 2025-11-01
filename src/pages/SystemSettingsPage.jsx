@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 const SystemSettingsPage = () => {
   const [schoolName, setSchoolName] = useState(' ');
   const [academicYear, setAcademicYear] = useState('');
+  const [emailDomain, setEmailDomain] = useState('');
   const [educationalStages, setEducationalStages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -32,6 +33,24 @@ const SystemSettingsPage = () => {
     semesterTwo: { from: '', to: '' },
   });
 
+  // دالة لتنظيف ومعالجة النطاق
+  const formatEmailDomain = (domain) => {
+    if (!domain) return '';
+    
+    // إزالة المسافات من البداية والنهاية
+    let cleanedDomain = domain.trim();
+    
+    // إزالة علامة @ إذا كانت في البداية
+    if (cleanedDomain.startsWith('@')) {
+      cleanedDomain = cleanedDomain.substring(1);
+    }
+    
+    // إزالة أي علامات @ إضافية قد تكون في النص
+    cleanedDomain = cleanedDomain.replace(/@/g, '');
+    
+    return cleanedDomain.toLowerCase();
+  };
+
   useEffect(() => {
     const fetchSettings = async () => {
       if (!user) return;
@@ -43,6 +62,7 @@ const SystemSettingsPage = () => {
           const data = docSnap.data();
           setSchoolName(data.schoolName || ' ');
           setAcademicYear(data.academicYear || '');
+          setEmailDomain(data.emailDomain || '');
           setEducationalStages(
             data.educationalStages && data.educationalStages.length > 0 
             ? data.educationalStages.map(stage => ({
@@ -91,10 +111,41 @@ const SystemSettingsPage = () => {
     }));
   };
 
+  // معالجة تغيير نطاق البريد الإلكتروني
+  const handleEmailDomainChange = (value) => {
+    // إزالة @ تلقائياً إذا أدخلها المستخدم
+    let cleanedValue = value;
+    if (cleanedValue.startsWith('@')) {
+      cleanedValue = cleanedValue.substring(1);
+    }
+    setEmailDomain(cleanedValue);
+  };
+
+  // دالة للتحقق من صحة النطاق
+  const isValidDomain = (domain) => {
+    if (!domain) return true; // النطاق اختياري
+    
+    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](\.[a-zA-Z]{2,})+$/;
+    return domainRegex.test(domain);
+  };
+
   const handleSaveSettings = async () => {
     if (!user) return;
     if (!schoolName.trim() || !academicYear.trim() || educationalStages.some(stage => !stage.name.trim())) {
       toast({ title: "خطأ في الإدخال", description: "الرجاء ملء جميع الحقول المطلوبة.", variant: "destructive" });
+      return;
+    }
+
+    // تنظيف النطاق قبل الحفظ
+    const cleanedEmailDomain = formatEmailDomain(emailDomain);
+
+    // التحقق من صيغة نطاق البريد الإلكتروني (إذا تم إدخاله)
+    if (cleanedEmailDomain && !isValidDomain(cleanedEmailDomain)) {
+      toast({ 
+        title: "خطأ في الإدخال", 
+        description: "الرجاء إدخال نطاق بريد إلكتروني صحيح (مثال: school.edu).", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -103,6 +154,7 @@ const SystemSettingsPage = () => {
       const settingsData = {
         schoolName,
         academicYear,
+        emailDomain: cleanedEmailDomain,
         educationalStages: educationalStages.map(({ id, name, semesterSystem, semesterOne, semesterTwo }) => ({
           id: String(id), name, semesterSystem, semesterOne, semesterTwo
         })),
@@ -113,7 +165,12 @@ const SystemSettingsPage = () => {
       const settingsRef = doc(db, "system_config", settingsDocId);
       await setDoc(settingsRef, settingsData, { merge: true });
       
-      updateSchoolSettings({ schoolName, educationalStages: settingsData.educationalStages, academicYear: settingsData.academicYear });
+      updateSchoolSettings({ 
+        schoolName, 
+        educationalStages: settingsData.educationalStages, 
+        academicYear: settingsData.academicYear,
+        emailDomain: settingsData.emailDomain
+      });
 
       toast({ title: "نجاح!", description: "تم حفظ إعدادات النظام بنجاح." });
     } catch (error) {
@@ -162,9 +219,28 @@ const SystemSettingsPage = () => {
             <Input id="schoolName" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="mt-1" />
           </div>
           <div>
-              <Label htmlFor="academicYear" className="text-base">السنة الدراسية</Label>
-              <Input id="academicYear" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="mt-1" />
-            </div>
+            <Label htmlFor="academicYear" className="text-base">السنة الدراسية</Label>
+            <Input id="academicYear" value={academicYear} onChange={(e) => setAcademicYear(e.target.value)} className="mt-1" />
+          </div>
+          {/* الحقل الجديد لنطاق البريد الإلكتروني */}
+          <div className="md:col-span-2">
+            <Label htmlFor="emailDomain" className="text-base">نطاق البريد الإلكتروني للمدرسة</Label>
+            <Input 
+              id="emailDomain" 
+              value={emailDomain} 
+              onChange={(e) => handleEmailDomainChange(e.target.value)} 
+              className="mt-1" 
+              placeholder="school.edu"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              سيتم استخدام هذا النطاق للتحقق من عناوين البريد الإلكتروني للمستخدمين في النظام.
+              {emailDomain && (
+                <span className="text-primary font-medium mr-1">
+                  مثال: user@{emailDomain || 'school.edu'}
+                </span>
+              )}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -226,8 +302,6 @@ const SystemSettingsPage = () => {
         </CardContent>
       </Card>
       
-      
-
       <CardFooter className="mt-8 flex justify-end">
         <Button onClick={handleSaveSettings} disabled={isLoading || isFetching} size="lg">
           {isLoading ? <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-foreground mr-2 ml-0"></div> : <Save className="mr-2 ml-0 h-5 w-5" />}

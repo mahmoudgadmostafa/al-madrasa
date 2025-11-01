@@ -272,8 +272,8 @@ const ManageCurriculumPage = () => {
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 {[
-                                    {type: 'textbooks', title: 'رابط المساعد الذكي ', icon: <Book/>}, 
-                                    {type: 'summaries', title: 'الملخصات والكتب', icon: <FileText/>}, 
+                                    {type: 'textbooks', title: 'الكتب المدرسية', icon: <Book/>}, 
+                                    {type: 'summaries', title: 'الملخصات', icon: <FileText/>}, 
                                     {type: 'exams', title: 'الاختبارات', icon: <ClipboardCheck/>},
                                     {type: 'youtube', title: 'شروحات يوتيوب', icon: <Film/> }
                                 ].map(section => (
