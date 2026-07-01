@@ -16,7 +16,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
   const logoUrl = "/logo.png";
-  
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
       setCurrentSchoolName(schoolSettings.schoolName);
@@ -54,7 +53,8 @@ const Navbar = () => {
             <motion.img 
               src={logoUrl} 
               alt="School Logo" 
-              className="h-10 w-10"
+              className="h-10 w-10 object-contain"
+              onError={(e) => { e.target.src = '/logo.png'; }}
               animate={{ rotate: [0, 10, -10, 10, 0] }}
               transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
             />
