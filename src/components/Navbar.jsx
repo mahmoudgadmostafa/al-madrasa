@@ -9,13 +9,14 @@ import { motion } from 'framer-motion';
 import NotificationsBell from '@/components/NotificationsBell';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import logoImg from '@/assets/logo.png';
 
 const Navbar = () => {
   const { user, logout, schoolSettings } = useAuth();
   const { unreadChatsCount } = useChat();
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
-  const logoUrl = "/logo.png";
+  const logoUrl = logoImg;
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
       setCurrentSchoolName(schoolSettings.schoolName);
@@ -54,7 +55,6 @@ const Navbar = () => {
               src={logoUrl} 
               alt="School Logo" 
               className="h-10 w-10 object-contain"
-              onError={(e) => { e.target.src = '/logo.png'; }}
               animate={{ rotate: [0, 10, -10, 10, 0] }}
               transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 3 }}
             />

@@ -20,6 +20,7 @@ import ManageOnlineRoomsPage from '@/pages/ManageOnlineRoomsPage';
 import ChatPage from '@/pages/ChatPage';
 import ProfilePage from '@/pages/ProfilePage';
 import { School } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const { user, isAuthenticated, loadingAuth, authChecked } = useAuth();
@@ -96,7 +97,7 @@ const PageLayout = ({ children }) => (
 const App = () => {
   const { isAuthenticated, user, loadingAuth, schoolSettings, authChecked } = useAuth();
   const location = useLocation();
-  const logoUrl = "/logo.png";
+  const logoUrl = logoImg;
 
   // تحسين شاشة التحميل
   if ((loadingAuth || !authChecked) && location.pathname !== '/login') {
