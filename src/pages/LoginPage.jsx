@@ -14,7 +14,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth as getAuthInstance } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import firebaseConfig from "@/config/firebaseconfig";
+import firebaseConfig from "@/config/firebaseConfig";
 
 
 const contactOptions = [
