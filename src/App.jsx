@@ -96,7 +96,7 @@ const PageLayout = ({ children }) => (
 const App = () => {
   const { isAuthenticated, user, loadingAuth, schoolSettings, authChecked } = useAuth();
   const location = useLocation();
-  const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png";
+  const logoUrl = "/logo.png";
 
   // تحسين شاشة التحميل
   if ((loadingAuth || !authChecked) && location.pathname !== '/login') {
