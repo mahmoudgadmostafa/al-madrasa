@@ -15,7 +15,7 @@ const Navbar = () => {
   const { unreadChatsCount } = useChat();
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
-  const logoUrl = "https://storage.googleapis.com/hostinger-horizons-assets-prod/3ba56b60-c3fa-4b52-8e67-c1dea4ab1636/3e65cc517d9039f74d4f9a08b8568025.png";
+  const logoUrl = "/logo.png";
 
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
