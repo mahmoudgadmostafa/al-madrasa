@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import NotificationsBell from '@/components/NotificationsBell';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import logoUrl from "/logo.png";
 
 const Navbar = () => {
   const { user, logout, schoolSettings } = useAuth();
@@ -16,6 +17,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
   const logoUrl = "/logo.png";
+  
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
       setCurrentSchoolName(schoolSettings.schoolName);
