@@ -15,7 +15,7 @@ const Navbar = () => {
   const { unreadChatsCount } = useChat();
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
-  const logoUrl = "/og.png";
+  const logoUrl = "/favicon.png";
 
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
