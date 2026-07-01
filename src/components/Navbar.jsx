@@ -16,7 +16,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [currentSchoolName, setCurrentSchoolName] = useState(' ');
   const logoUrl = "/logo.png";
-
   useEffect(() => {
     if (schoolSettings && schoolSettings.schoolName) {
       setCurrentSchoolName(schoolSettings.schoolName);
