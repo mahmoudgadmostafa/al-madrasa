@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from "@/components/ui/use-toast";
-import { Save } from 'lucide-react';
+import { Save, X, User, Mail, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { doc, updateDoc } from "firebase/firestore";
 
+/**
+ * TeacherFormModal - نافذة تعديل بيانات المعلم المحدّثة
+ * تتيح تعديل الاسم واختيار المراحل التعليمية (مع فلترة المحذوفة)
+ */
 const TeacherFormModal = ({ isOpen, onClose, teacher, educationalStages, onSave, db }) => {
   const [teacherName, setTeacherName] = useState('');
   const [teacherEmail, setTeacherEmail] = useState('');
@@ -18,13 +19,25 @@ const TeacherFormModal = ({ isOpen, onClose, teacher, educationalStages, onSave,
     if (teacher) {
       setTeacherName(teacher.name || '');
       setTeacherEmail(teacher.email || '');
-      setAssignedStages(teacher.assignedStages || []);
+      // فلترة المراحل المحذوفة عند فتح النافذة
+      const validStages = (teacher.assignedStages || []).filter(stageId =>
+        educationalStages.some(s => s.id === stageId)
+      );
+      setAssignedStages(validStages);
     } else {
       setTeacherName('');
       setTeacherEmail('');
       setAssignedStages([]);
     }
-  }, [teacher, isOpen]);
+  }, [teacher, isOpen, educationalStages]);
+
+  const toggleStage = (stageId) => {
+    setAssignedStages(prev =>
+      prev.includes(stageId)
+        ? prev.filter(id => id !== stageId)
+        : [...prev, stageId]
+    );
+  };
 
   const validateForm = () => {
     if (!teacherName.trim()) {
@@ -40,21 +53,14 @@ const TeacherFormModal = ({ isOpen, onClose, teacher, educationalStages, onSave,
 
   const handleSave = async () => {
     if (!validateForm() || !teacher) return;
-
     setIsLoading(true);
-    const teacherDataPayload = {
-      name: teacherName,
-      assignedStages,
-    };
+
+    const teacherDataPayload = { name: teacherName, assignedStages };
 
     try {
-      const teacherDocRef = doc(db, "users", teacher.id);
-      await updateDoc(teacherDocRef, teacherDataPayload);
-      
-      const updatedTeacherData = { ...teacher, ...teacherDataPayload };
-      onSave(updatedTeacherData, false);
-      
-      toast({ title: "نجاح", description: "تم تحديث بيانات المعلم بنجاح." });
+      await updateDoc(doc(db, "users", teacher.id), teacherDataPayload);
+      onSave({ ...teacher, ...teacherDataPayload }, false);
+      toast({ title: "✅ تم التحديث", description: "تم تحديث بيانات المعلم بنجاح." });
       onClose();
     } catch (error) {
       console.error("Error updating teacher:", error);
@@ -64,6 +70,9 @@ const TeacherFormModal = ({ isOpen, onClose, teacher, educationalStages, onSave,
     }
   };
 
+  const initials = (teacher?.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const stageColors = ['#8b5cf6', '#6366f1', '#a855f7', '#7c3aed', '#4f46e5'];
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -71,61 +80,144 @@ const TeacherFormModal = ({ isOpen, onClose, teacher, educationalStages, onSave,
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
           onClick={onClose}
         >
           <motion.div
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
-            className="bg-card p-6 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #2d1b69 50%, #1e1b4b 100%)',
+              border: '1px solid rgba(139,92,246,0.35)',
+            }}
             onClick={(e) => e.stopPropagation()}
+            dir="rtl"
           >
-            <CardHeader>
-              <CardTitle>تعديل بيانات المعلم</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="teacherName">اسم المعلم</Label>
-                <Input id="teacherName" value={teacherName} onChange={(e) => setTeacherName(e.target.value)} />
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-purple-500/20 flex items-center gap-4" style={{ background: 'rgba(139,92,246,0.12)' }}>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shrink-0"
+                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                {initials}
               </div>
-              <div>
-                <Label htmlFor="teacherEmail">البريد الإلكتروني (للدخول)</Label>
-                <Input id="teacherEmail" type="email" value={teacherEmail} disabled />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-white font-bold text-lg">تعديل بيانات المعلم</h2>
+                <p className="text-purple-300 text-xs mt-0.5 truncate">{teacher?.email}</p>
               </div>
-              <div>
-                <Label>المراحل التعليمية المسندة</Label>
-                {educationalStages.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
-                    {educationalStages.map(stage => (
-                      <div key={stage.id} className="flex items-center space-x-2 rtl:space-x-reverse p-2 border rounded-md bg-background/50">
-                        <input
-                          type="checkbox"
-                          id={`stage-edit-${stage.id}`}
-                          checked={assignedStages.includes(stage.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setAssignedStages([...assignedStages, stage.id]);
-                            } else {
-                              setAssignedStages(assignedStages.filter(sId => sId !== stage.id));
-                            }
-                          }}
-                          className="form-checkbox h-5 w-5 text-primary rounded focus:ring-primary"
-                        />
-                        <Label htmlFor={`stage-edit-${stage.id}`} className="text-sm font-normal">{stage.name}</Label>
-                      </div>
-                    ))}
+              <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-purple-400 hover:bg-white/10 hover:text-white transition-colors shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              {/* Teacher Name */}
+              <div className="space-y-2">
+                <Label className="text-purple-200 text-sm font-medium flex items-center gap-2">
+                  <User className="w-4 h-4" /> اسم المعلم
+                </Label>
+                <input
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  placeholder="الاسم الكامل للمعلم"
+                  className="w-full px-4 py-3 rounded-xl border border-purple-500/30 text-white placeholder-purple-400/40 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-200"
+                  style={{ background: 'rgba(255,255,255,0.07)' }}
+                />
+              </div>
+
+              {/* Email (read-only) */}
+              <div className="space-y-2">
+                <Label className="text-purple-200 text-sm font-medium flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> البريد الإلكتروني
+                  <span className="text-xs text-purple-500 font-normal">(للقراءة فقط)</span>
+                </Label>
+                <div className="w-full px-4 py-3 rounded-xl border border-purple-500/15 text-purple-300 text-sm" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  {teacherEmail || '—'}
+                </div>
+              </div>
+
+              {/* Educational Stages */}
+              <div className="space-y-3">
+                <Label className="text-purple-200 text-sm font-medium flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4" /> المراحل التعليمية المسندة
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(139,92,246,0.25)', color: '#c084fc' }}>
+                    {assignedStages.length} محددة
+                  </span>
+                </Label>
+
+                {educationalStages.length === 0 ? (
+                  <div className="p-4 rounded-xl text-center border border-dashed border-purple-500/20" style={{ background: 'rgba(139,92,246,0.05)' }}>
+                    <GraduationCap className="w-8 h-8 text-purple-400/30 mx-auto mb-2" />
+                    <p className="text-purple-400/60 text-sm">لا توجد مراحل تعليمية معرفة</p>
+                    <p className="text-purple-500/40 text-xs mt-1">يرجى إضافتها من إعدادات النظام</p>
                   </div>
-                ) : <p className="text-sm text-muted-foreground">لا توجد مراحل تعليمية معرفة. يرجى إضافتها من إعدادات النظام.</p>}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {educationalStages.map((stage, index) => {
+                      const isSelected = assignedStages.includes(stage.id);
+                      const color = stageColors[index % stageColors.length];
+                      return (
+                        <button
+                          key={stage.id}
+                          onClick={() => toggleStage(stage.id)}
+                          className="flex items-center gap-3 p-3 rounded-xl border text-right transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                          style={{
+                            background: isSelected ? `${color}20` : 'rgba(255,255,255,0.04)',
+                            borderColor: isSelected ? `${color}60` : 'rgba(139,92,246,0.15)',
+                          }}
+                        >
+                          {/* Custom Checkbox */}
+                          <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all duration-150"
+                            style={{
+                              background: isSelected ? color : 'transparent',
+                              borderColor: isSelected ? color : 'rgba(139,92,246,0.35)',
+                            }}>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                          </div>
+                          <span className="text-sm font-medium flex-1" style={{ color: isSelected ? '#e9d5ff' : '#a78bfa' }}>
+                            {stage.name}
+                          </span>
+                          {isSelected && (
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }}></span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2 rtl:space-x-reverse">
-              <Button variant="outline" onClick={onClose}>إلغاء</Button>
-              <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-                <Save className="mr-1 ml-0 rtl:ml-1 rtl:mr-0 h-4 w-4" />
-              </Button>
-            </CardFooter>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-6 py-5 border-t border-purple-500/20 flex gap-3" style={{ background: 'rgba(0,0,0,0.15)' }}>
+              <button
+                onClick={onClose}
+                className="flex-1 py-3 rounded-xl border border-purple-500/30 text-purple-200 hover:bg-purple-500/10 hover:text-white transition-all duration-150 text-sm font-medium"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isLoading || !teacherName.trim()}
+                className="flex-1 py-3 rounded-xl text-white font-semibold flex items-center justify-center gap-2 text-sm shadow-lg hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                style={{ background: isLoading ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    حفظ التعديلات
+                  </>
+                )}
+              </button>
+            </div>
           </motion.div>
         </motion.div>
       )}
