@@ -326,18 +326,22 @@ const StudentDashboardPage = () => {
             <AccordionItem 
               key={subject.id} 
               value={subject.id}
+              className="border border-gray-100 rounded-xl mb-3 sm:mb-4 bg-white shadow-sm overflow-hidden transition-all hover:shadow-md data-[state=open]:border-primary/20 data-[state=open]:shadow-md"
             >
               <AccordionTrigger 
                 disabled={isHidden}
                 className={`
-                  text-sm sm:text-lg flex items-center justify-between px-2 sm:px-4
-                  ${isHidden ? 'opacity-60 cursor-not-allowed' : ''}
+                  text-base sm:text-xl font-bold flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4
+                  ${isHidden ? 'opacity-60 cursor-not-allowed' : 'hover:text-primary transition-colors'}
                 `}
               >
-                <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className={`p-1.5 rounded-md ${isHidden ? 'bg-gray-100' : 'bg-primary/10 text-primary'}`}>
+                    <Book size={18} className="sm:w-5 sm:h-5" />
+                  </div>
                   <span className="truncate text-right">{subject.name}</span>
                   {isHidden && (
-                    <Badge variant="secondary" className="text-xs shrink-0">
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0 bg-gray-200">
                       مخفي
                     </Badge>
                   )}
@@ -357,165 +361,140 @@ const StudentDashboardPage = () => {
               <AccordionContent className="px-2 sm:px-4">
                 {!isHidden ? (
                   <>
-                    <div className="flex items-center gap-1 sm:gap-2 mb-3 sm:mb-4 flex-wrap">
-                      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
-                        <Eye className="w-2 h-2 sm:w-3 sm:h-3 ml-1" />
+                    <div className="flex items-center gap-2 mb-4 sm:mb-6 bg-green-50 p-3 rounded-lg border border-green-100">
+                      <div className="p-1.5 bg-green-200 rounded-full">
+                        <Eye className="w-4 h-4 text-green-700" />
+                      </div>
+                      <span className="text-sm font-bold text-green-800 flex-1">
                         مادة مفعلة
-                      </Badge>
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        المعلم: {subject.teacherName || 'غير محدد'}
                       </span>
+                      <Badge variant="outline" className="bg-white text-xs sm:text-sm">
+                        المعلم: {subject.teacherName || 'غير محدد'}
+                      </Badge>
                     </div>
 
-                    {/* اسال المساعد الذكي */}
-                    <div className="mb-3 sm:mb-4">
-                      <h4 className="flex items-center text-sm sm:text-md font-semibold my-2 text-primary">
-                        <Book size={isMobile ? 16 : 18} />
-                        <span className="mr-1 sm:mr-2 text-xs sm:text-sm">اسال مساعدك الذكي</span>
-                      </h4>
-                      {subject.content?.textbooks?.length > 0 ? (
-                        <div className="space-y-2 sm:space-y-3">
-                          <Select onValueChange={(value) => {
-                            setSelectedBook({ subjectId: subject.id, bookId: value });
-                          }}>
-                            <SelectTrigger className="w-full text-xs sm:text-sm">
-                              <SelectValue placeholder="اختر مساعدك" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subject.content.textbooks.map(item => (
-                                <SelectItem key={item.id} value={item.id} className="text-xs sm:text-sm">
-                                  {item.title || `مساعد ${subject.name}`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedBook.subjectId === subject.id && (() => {
-                            const book = subject.content.textbooks.find(i => i.id === selectedBook.bookId);
-                            return book ? (
-                              <div className="flex justify-center sm:justify-start">
-                                {renderResourceButton(book, 'textbooks')}
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      ) : <p className="text-xs sm:text-sm text-muted-foreground">لا يوجد مساعد ذكي.</p>}
-                    </div>
-
-                    {/* كتب وملخصات */}
-                    <div className="mb-3 sm:mb-4">
-                      <h4 className="flex items-center text-sm sm:text-md font-semibold my-2 text-primary">
-                        <FileText size={isMobile ? 16 : 18} />
-                        <span className="mr-1 sm:mr-2 text-xs sm:text-sm">الملخصات والكتب</span>
-                      </h4>
-                      {subject.content?.summaries?.length > 0 ? (
-                        <div className="space-y-2 sm:space-y-3">
-                          <Select onValueChange={(value) => {
-                            setSelectedSummary({ subjectId: subject.id, summaryId: value });
-                          }}>
-                            <SelectTrigger className="w-full text-xs sm:text-sm">
-                              <SelectValue placeholder="اختر ملخصا او كتاب" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subject.content.summaries.map(item => (
-                                <SelectItem key={item.id} value={item.id} className="text-xs sm:text-sm">
-                                  {item.title || `ملخص ${subject.name}`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedSummary.subjectId === subject.id && (() => {
-                            const summary = subject.content.summaries.find(i => i.id === selectedSummary.summaryId);
-                            return summary ? (
-                              <div className="flex justify-center sm:justify-start">
-                                {renderResourceButton(summary, 'summaries')}
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      ) : <p className="text-xs sm:text-sm text-muted-foreground">لا توجد كتب او ملخصات</p>}
-                    </div>
-
-                    {/* الاختبارات */}
-                    <div className="mb-3 sm:mb-4">
-                      <h4 className="flex items-center text-sm sm:text-md font-semibold my-2 text-primary">
-                        <ClipboardCheck size={isMobile ? 16 : 18} />
-                        <span className="mr-1 sm:mr-2 text-xs sm:text-sm">الاختبارات</span>
-                      </h4>
-                      {subject.content?.exams?.length > 0 ? (
-                        <div className="space-y-2 sm:space-y-3">
-                          <Select onValueChange={(value) => {
-                            setSelectedExam({ subjectId: subject.id, examId: value });
-                          }}>
-                            <SelectTrigger className="w-full text-xs sm:text-sm">
-                              <SelectValue placeholder="اختر اختباراً" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subject.content.exams.map(item => (
-                                <SelectItem key={item.id} value={item.id} className="text-xs sm:text-sm">
-                                  {item.title || `اختبار ${subject.name}`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedExam.subjectId === subject.id && (() => {
-                            const exam = subject.content.exams.find(i => i.id === selectedExam.examId);
-                            return exam ? (
-                              <div className="flex justify-center sm:justify-start">
-                                {renderResourceButton(exam, 'exams')}
-                              </div>
-                            ) : null;
-                          })()}
-                        </div>
-                      ) : <p className="text-xs sm:text-sm text-muted-foreground">لا توجد اختبارات.</p>}
-                    </div>
-
-                    {/* الفيديوهات */}
-                    <div className="mb-3 sm:mb-4">
-                      <h4 className="flex items-center text-sm sm:text-md font-semibold my-2 text-primary">
-                        <Film size={isMobile ? 16 : 18} />
-                        <span className="mr-1 sm:mr-2 text-xs sm:text-sm">شروحات الفيديو</span>
-                      </h4>
-                      {subject.content?.youtube?.length > 0 ? (
-                        <div className="space-y-2 sm:space-y-3">
-                          <div className="p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <p className="text-xs sm:text-sm text-blue-800 text-center font-medium">
-                              📹 اختر فيديو الشرح من القائمة
-                            </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                      {/* اسال المساعد الذكي */}
+                      <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 hover:shadow-md transition-shadow">
+                        <h4 className="flex items-center text-base font-bold mb-3 text-purple-700">
+                          <div className="p-1.5 bg-purple-100 rounded-md mr-2 ml-0 rtl:ml-2 rtl:mr-0">
+                            <Brain size={18} />
                           </div>
-                          
-                          <Select 
-                            onValueChange={(value) => {
-                              handleVideoSelect(value, subject.id, subject.content.youtube);
-                            }}
-                          >
-                            <SelectTrigger className="w-full text-xs sm:text-sm">
-                              <SelectValue placeholder="اختر من القائمة" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {subject.content.youtube.map((item, index) => (
-                                <SelectItem key={item.id} value={item.id} className="text-xs sm:text-sm">
-                                  {item.title || `الفيديو ${index + 1}`}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          
-                          {/* زر تشغيل الفيديو - يظهر لأي فيديو مختار */}
-                          {currentVideo && selectedVideo.subjectId === subject.id && selectedVideo.videoId && (
-                            <div className="mt-3 sm:mt-4 p-3 sm:p-4 border rounded-lg bg-gray-50">
-                              <p className="font-semibold mb-2 sm:mb-3 text-center text-gray-800 text-xs sm:text-sm">
-                                {currentVideo.title}
-                              </p>
-                              <div className="flex justify-center">
-                                {renderResourceButton(
-                                  { url: currentVideo.url, title: currentVideo.title }, 
-                                  'youtube'
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : <p className="text-xs sm:text-sm text-muted-foreground">لا توجد فيديوهات.</p>}
+                          المساعد الذكي
+                        </h4>
+                        {subject.content?.textbooks?.length > 0 ? (
+                          <div className="space-y-3">
+                            <Select onValueChange={(value) => setSelectedBook({ subjectId: subject.id, bookId: value })}>
+                              <SelectTrigger className="w-full bg-white border-purple-200 focus:ring-purple-500">
+                                <SelectValue placeholder="اختر مساعدك" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subject.content.textbooks.map(item => (
+                                  <SelectItem key={item.id} value={item.id}>{item.title || `مساعد ${subject.name}`}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedBook.subjectId === subject.id && (() => {
+                              const book = subject.content.textbooks.find(i => i.id === selectedBook.bookId);
+                              return book ? renderResourceButton(book, 'textbooks') : null;
+                            })()}
+                          </div>
+                        ) : <p className="text-sm text-gray-500 bg-white/50 p-2 rounded text-center">لا يوجد مساعد ذكي.</p>}
+                      </div>
+
+                      {/* كتب وملخصات */}
+                      <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 hover:shadow-md transition-shadow">
+                        <h4 className="flex items-center text-base font-bold mb-3 text-blue-700">
+                          <div className="p-1.5 bg-blue-100 rounded-md mr-2 ml-0 rtl:ml-2 rtl:mr-0">
+                            <FileText size={18} />
+                          </div>
+                          الملخصات والكتب
+                        </h4>
+                        {subject.content?.summaries?.length > 0 ? (
+                          <div className="space-y-3">
+                            <Select onValueChange={(value) => setSelectedSummary({ subjectId: subject.id, summaryId: value })}>
+                              <SelectTrigger className="w-full bg-white border-blue-200 focus:ring-blue-500">
+                                <SelectValue placeholder="اختر ملخصا أو كتاب" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subject.content.summaries.map(item => (
+                                  <SelectItem key={item.id} value={item.id}>{item.title || `ملخص ${subject.name}`}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedSummary.subjectId === subject.id && (() => {
+                              const summary = subject.content.summaries.find(i => i.id === selectedSummary.summaryId);
+                              return summary ? renderResourceButton(summary, 'summaries') : null;
+                            })()}
+                          </div>
+                        ) : <p className="text-sm text-gray-500 bg-white/50 p-2 rounded text-center">لا توجد كتب أو ملخصات</p>}
+                      </div>
+
+                      {/* الاختبارات */}
+                      <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 hover:shadow-md transition-shadow">
+                        <h4 className="flex items-center text-base font-bold mb-3 text-orange-700">
+                          <div className="p-1.5 bg-orange-100 rounded-md mr-2 ml-0 rtl:ml-2 rtl:mr-0">
+                            <ClipboardCheck size={18} />
+                          </div>
+                          الاختبارات
+                        </h4>
+                        {subject.content?.exams?.length > 0 ? (
+                          <div className="space-y-3">
+                            <Select onValueChange={(value) => setSelectedExam({ subjectId: subject.id, examId: value })}>
+                              <SelectTrigger className="w-full bg-white border-orange-200 focus:ring-orange-500">
+                                <SelectValue placeholder="اختر اختباراً" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subject.content.exams.map(item => (
+                                  <SelectItem key={item.id} value={item.id}>{item.title || `اختبار ${subject.name}`}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedExam.subjectId === subject.id && (() => {
+                              const exam = subject.content.exams.find(i => i.id === selectedExam.examId);
+                              return exam ? renderResourceButton(exam, 'exams') : null;
+                            })()}
+                          </div>
+                        ) : <p className="text-sm text-gray-500 bg-white/50 p-2 rounded text-center">لا توجد اختبارات.</p>}
+                      </div>
+
+                      {/* الفيديوهات */}
+                      <div className="bg-red-50/50 p-4 rounded-xl border border-red-100 hover:shadow-md transition-shadow">
+                        <h4 className="flex items-center text-base font-bold mb-3 text-red-700">
+                          <div className="p-1.5 bg-red-100 rounded-md mr-2 ml-0 rtl:ml-2 rtl:mr-0">
+                            <Film size={18} />
+                          </div>
+                          شروحات الفيديو
+                        </h4>
+                        {subject.content?.youtube?.length > 0 ? (
+                          <div className="space-y-3">
+                            <Select onValueChange={(value) => handleVideoSelect(value, subject.id, subject.content.youtube)}>
+                              <SelectTrigger className="w-full bg-white border-red-200 focus:ring-red-500">
+                                <SelectValue placeholder="اختر من القائمة" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subject.content.youtube.map((item, index) => (
+                                  <SelectItem key={item.id} value={item.id}>{item.title || `الفيديو ${index + 1}`}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            
+                            {/* زر تشغيل الفيديو - يظهر لأي فيديو مختار */}
+                            {currentVideo && selectedVideo.subjectId === subject.id && selectedVideo.videoId && (
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="mt-3 p-3 border border-red-200 rounded-lg bg-white shadow-sm"
+                              >
+                                <p className="font-semibold mb-2 text-center text-gray-800 text-xs sm:text-sm line-clamp-1">
+                                  {currentVideo.title}
+                                </p>
+                                {renderResourceButton({ url: currentVideo.url, title: currentVideo.title }, 'youtube')}
+                              </motion.div>
+                            )}
+                          </div>
+                        ) : <p className="text-sm text-gray-500 bg-white/50 p-2 rounded text-center">لا توجد فيديوهات.</p>}
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -555,43 +534,58 @@ const StudentDashboardPage = () => {
   );
 
   // مكون الغرف الافتراضية للشريط الجانبي
+  // مكون الغرف الافتراضية للشريط الجانبي
   const VirtualRoomsCard = () => (
-    <Card className="shadow-lg h-fit">
-      <CardHeader className="p-3 sm:p-6">
-        <CardTitle className="flex items-center text-lg sm:text-xl">
-          <Video className="mr-2 text-primary" size={isMobile ? 18 : 20} /> 
-          الغرف الافتراضية
+    <Card className="shadow-xl h-fit border-0 bg-gradient-to-b from-white to-gray-50/50 sticky top-24 overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-pink-500 to-purple-500"></div>
+      <CardHeader className="p-4 sm:p-6 pb-2">
+        <CardTitle className="flex items-center text-lg sm:text-xl font-bold">
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-red-100 mr-2 ml-0 rtl:ml-2 rtl:mr-0">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
+            <Video className="text-red-600 relative z-10" size={16} />
+          </div>
+          البث المباشر
         </CardTitle>
-        <CardDescription className="text-xs sm:text-sm">روابط الحصص الأونلاين المباشرة.</CardDescription>
+        <CardDescription className="text-xs sm:text-sm font-medium mt-1">حصص أونلاين متاحة الآن</CardDescription>
       </CardHeader>
-      <CardContent className="p-3 sm:p-6 pt-0">
+      <CardContent className="p-4 sm:p-6 pt-2">
         {onlineRooms.length > 0 ? (
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-3">
             {onlineRooms.map(room => (
               <a 
                 key={room.id} 
                 href={room.url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="block"
+                className="block group"
               >
                 <motion.div 
-                  whileHover={{ scale: 1.02 }} 
-                  className="p-3 sm:p-4 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer"
+                  whileHover={{ scale: 1.03, y: -2 }} 
+                  whileTap={{ scale: 0.98 }}
+                  className="p-4 rounded-xl bg-white border border-gray-100 shadow-sm group-hover:shadow-md group-hover:border-red-200 transition-all relative overflow-hidden"
                 >
-                  <p className="font-bold text-primary text-sm sm:text-base">{room.name}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center">
-                    انقر للانضمام
-                    <ExternalLink size={isMobile ? 12 : 14} className="ml-2" />
-                  </p>
+                  <div className="absolute top-0 right-0 w-1 h-full bg-red-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
+                  <p className="font-bold text-gray-800 text-sm sm:text-base group-hover:text-red-600 transition-colors">{room.name}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px]">
+                      مباشر الآن
+                    </Badge>
+                    <span className="text-xs font-semibold text-red-600 flex items-center group-hover:translate-x-1 transition-transform rtl:group-hover:-translate-x-1">
+                      انضمام
+                      <ExternalLink size={12} className="ml-1 mr-0 rtl:mr-1 rtl:ml-0" />
+                    </span>
+                  </div>
                 </motion.div>
               </a>
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground p-3 sm:p-4 text-xs sm:text-sm">
-            لا توجد غرف افتراضية متاحة حالياً.
-          </p>
+          <div className="flex flex-col items-center justify-center p-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <Video className="w-8 h-8 text-gray-300 mb-2" />
+            <p className="text-center text-gray-500 font-medium text-xs sm:text-sm">
+              لا توجد حصص مباشرة حالياً
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -606,66 +600,104 @@ const StudentDashboardPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-3 sm:p-4 md:p-6">
-      {/* الهيدر */}
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] relative overflow-hidden">
+      {/* شبكة خلفية هندسية (Geometric pattern) */}
+      <div className="absolute inset-0 z-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#475569 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }}></div>
+      
+      {/* دوائر إضاءة ناعمة (Soft Glows) */}
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/20 blur-[120px] z-0 pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-400/20 blur-[120px] z-0 pointer-events-none"></div>
+
+      <div className="container mx-auto p-3 sm:p-4 md:p-6 relative z-10">
+        {/* الهيدر */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        className="mb-4 sm:mb-6 md:mb-8"
+        className="mb-6 sm:mb-8 md:mb-10"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
-              لوحة تحكم الطالب
-            </h1>
+        <div className="bg-gradient-to-r from-primary/15 via-primary/5 to-transparent rounded-2xl p-6 sm:p-8 mb-6 border border-primary/20 shadow-sm relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+          
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 sm:p-3 bg-primary/20 rounded-xl text-primary">
+                  <Book size={28} className="sm:w-10 sm:h-10" />
+                </div>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
+                  مرحباً بك، <span className="text-primary">{user?.name || 'طالب'}</span>
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-base sm:text-lg md:text-xl pr-2 sm:pr-16 flex flex-wrap items-center gap-2 mt-3 font-medium">
+                <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-primary/30 text-sm py-1">
+                  {studentStage?.name || "المرحلة غير محددة"}
+                </Badge>
+                <span>ابدأ رحلة التعلم الخاصة بك اليوم!</span>
+              </p>
+            </div>
+            
             {/* زر الغرف الافتراضية للجوال */}
             {isMobile && (
               <Button 
-                variant="outline" 
-                size="sm"
+                variant="default" 
                 onClick={() => setShowMobileRooms(!showMobileRooms)}
-                className="ml-4"
+                className="w-full sm:w-auto shadow-md"
               >
-                <Video className="h-4 w-4" />
-                الغرف
+                <Video className="h-4 w-4 mr-2 ml-0 rtl:ml-2 rtl:mr-0" />
+                الغرف الافتراضية المباشرة
               </Button>
             )}
           </div>
-          
-          <div className="text-right">
-            <p className="text-sm sm:text-lg font-bold text-red-600">
-              مرحباً بك، {user?.name || 'طالب'}
-            </p>
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              المرحلة التعليمية: {studentStage?.name || "غير محددة"}
-            </p>
-          </div>
         </div>
-
-        <p className="text-center text-base sm:text-xl font-bold text-primary my-3 sm:my-4">
-          هنا تجد موادك الدراسية والمحتوى التعليمي
-        </p>
         
         {/* إحصائيات المواد */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">{subjectsStats.total}</p>
-              <p className="text-xs sm:text-sm text-blue-800">إجمالي المواد</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-green-600">{subjectsStats.active}</p>
-              <p className="text-xs sm:text-sm text-green-800">المواد المفعلة</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-orange-50 border-orange-200">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <p className="text-xl sm:text-2xl font-bold text-orange-600">{subjectsStats.hidden}</p>
-              <p className="text-xs sm:text-sm text-orange-800">المواد المخفية</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+            <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-md hover:shadow-lg transition-all overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600 mb-1">إجمالي المواد</p>
+                  <p className="text-3xl font-extrabold text-gray-800">{subjectsStats.total}</p>
+                </div>
+                <div className="p-4 bg-blue-100 rounded-full group-hover:scale-110 transition-transform text-blue-600">
+                  <Book size={28} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+            <Card className="bg-gradient-to-br from-green-50 to-white border-green-100 shadow-md hover:shadow-lg transition-all overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-2 h-full bg-green-500"></div>
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600 mb-1">المواد المفعلة</p>
+                  <p className="text-3xl font-extrabold text-gray-800">{subjectsStats.active}</p>
+                </div>
+                <div className="p-4 bg-green-100 rounded-full group-hover:scale-110 transition-transform text-green-600">
+                  <Eye size={28} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+            <Card className="bg-gradient-to-br from-orange-50 to-white border-orange-100 shadow-md hover:shadow-lg transition-all overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-2 h-full bg-orange-500"></div>
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600 mb-1">المواد المقفلة</p>
+                  <p className="text-3xl font-extrabold text-gray-800">{subjectsStats.hidden}</p>
+                </div>
+                <div className="p-4 bg-orange-100 rounded-full group-hover:scale-110 transition-transform text-orange-600">
+                  <Lock size={28} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </motion.div>
 
@@ -679,40 +711,54 @@ const StudentDashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* المحتوى الرئيسي */}
         <div className="lg:col-span-2">
-          <Card className="shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
-              <CardTitle className="text-lg sm:text-xl">المواد الدراسية</CardTitle>
-              <div className="flex items-center gap-1 sm:gap-2">
+          <Card className="shadow-xl border-0 overflow-hidden">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 gap-4 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Book size={24} />
+                </div>
+                <CardTitle className="text-xl sm:text-2xl font-extrabold text-gray-800 tracking-tight">المواد الدراسية</CardTitle>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm self-start sm:self-auto">
                 <Button
-                  variant={showAllSubjects ? "default" : "outline"}
+                  variant={showAllSubjects ? "default" : "ghost"}
                   size={isMobile ? "sm" : "default"}
                   onClick={() => setShowAllSubjects(!showAllSubjects)}
-                  className="flex items-center gap-1 text-xs sm:text-sm"
+                  className={`flex items-center gap-1 text-xs sm:text-sm font-semibold transition-all ${showAllSubjects ? 'shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
-                  {showAllSubjects ? "المواد المفعلة فقط" : "عرض جميع المواد"}
+                  الكل
                 </Button>
-                <Badge variant="secondary" className="text-xs">
-                  {showAllSubjects ? subjectsStats.total : subjectsStats.active} / {subjectsStats.total}
-                </Badge>
+                <Button
+                  variant={!showAllSubjects ? "default" : "ghost"}
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => setShowAllSubjects(false)}
+                  className={`flex items-center gap-1 text-xs sm:text-sm font-semibold transition-all ${!showAllSubjects ? 'shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                  <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                  المفعلة
+                  <Badge variant={!showAllSubjects ? "secondary" : "outline"} className="ml-1 px-1.5 py-0 text-[10px] sm:text-xs">
+                    {subjectsStats.active}
+                  </Badge>
+                </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
+            <CardContent className="p-4 sm:p-6">
               {studentStage?.semesterSystem === 'two-semesters' ? (
                 <Tabs defaultValue="semester1" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2 mb-4">
-                    <TabsTrigger value="semester1" className="text-xs sm:text-sm">
+                  <TabsList className="w-full grid grid-cols-2 mb-6 bg-gray-100/50 p-1 rounded-xl">
+                    <TabsTrigger value="semester1" className="text-sm sm:text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">
                       الفصل الأول 
-                      <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs">
+                      <Badge variant="outline" className="mr-1 sm:mr-2 text-xs bg-gray-50">
                         {showAllSubjects 
                           ? subjects.semesterOneSubjects.length 
                           : filteredSubjects.semesterOneSubjects.length
                         }
                       </Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="semester2" className="text-xs sm:text-sm">
+                    <TabsTrigger value="semester2" className="text-sm sm:text-base font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg py-2">
                       الفصل الثاني
-                      <Badge variant="secondary" className="mr-1 sm:mr-2 text-xs">
+                      <Badge variant="outline" className="mr-1 sm:mr-2 text-xs bg-gray-50">
                         {showAllSubjects 
                           ? subjects.semesterTwoSubjects.length 
                           : filteredSubjects.semesterTwoSubjects.length
@@ -775,6 +821,7 @@ const StudentDashboardPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
