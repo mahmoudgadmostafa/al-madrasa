@@ -42,7 +42,7 @@ const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const { login, loadingAuth, schoolSettings, isAuthenticated, user, authChecked } = useAuth();
-  const [currentSchoolName, setCurrentSchoolName] = useState('نظام المدارس');
+  const [currentSchoolName, setCurrentSchoolName] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const [index, setIndex] = useState(0);
