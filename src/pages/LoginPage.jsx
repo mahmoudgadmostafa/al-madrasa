@@ -268,7 +268,7 @@ const handleSubmit = async (e) => {
 
       {/* قسم التواصل */}
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 20 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="mt-8 w-full max-w-md"
