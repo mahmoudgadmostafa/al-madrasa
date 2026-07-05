@@ -258,7 +258,6 @@ const handleSubmit = async (e) => {
 
           <CardFooter className="flex flex-col items-center text-center pt-4 border-t">
             <p className="text-xs text-muted-foreground font-medium">
-              جميع الحقوق محفوظة © 2025
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               تصميم وتطوير بواسطة أ/ محمود جاد مصطفى
